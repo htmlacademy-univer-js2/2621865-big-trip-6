@@ -3,33 +3,38 @@ import FiltersView from '../view/filters-view.js';
 import SortView from '../view/sort-view.js';
 import EditFormView from '../view/edit-form-view.js';
 import EventView from '../view/event-view.js';
+import Model from '../model/model.js';
 
 export default class MainPresenter {
   constructor() {
     this.filtersContainer = document.querySelector('.trip-controls__filters');
     this.eventsContainer = document.querySelector('.trip-events');
+    this.model = new Model();
   }
 
   init() {
-    // Рендерим фильтры
     render(new FiltersView(), this.filtersContainer);
-
-    // Рендерим сортировку
     render(new SortView(), this.eventsContainer);
 
-    // Создаём контейнер для списка событий (как обычный DOM-элемент)
     const eventsList = document.createElement('ul');
     eventsList.classList.add('trip-events__list');
-    
-    // Вставляем eventsList напрямую, без использования render
     this.eventsContainer.appendChild(eventsList);
 
-    // Рендерим форму редактирования первой
-    render(new EditFormView(), eventsList);
+    const points = this.model.getPoints();
+    const destinations = this.model.getDestinations();
+    const offers = this.model.getOffers();
+    const firstPoint = points[0];
+    const firstDestination = this.model.getDestinationById(firstPoint.destinationId);
+    const firstOffers = this.model.getOffersByType(firstPoint.type);
+    
+    render(new EditFormView(firstPoint, firstDestination, firstOffers), eventsList);
 
-    // Рендерим 3 точки маршрута
-    for (let i = 0; i < 3; i++) {
-      render(new EventView(), eventsList);
-    }
+    points.forEach((point) => {
+      const destination = this.model.getDestinationById(point.destinationId);
+      const pointOffers = this.model.getOffersByType(point.type)
+        .filter((offer) => point.offersIds.includes(offer.id));
+      
+      render(new EventView(point, destination, pointOffers), eventsList);
+    });
   }
 }
