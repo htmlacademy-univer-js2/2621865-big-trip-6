@@ -3,7 +3,9 @@ import FiltersView from '../view/filters-view.js';
 import SortView from '../view/sort-view.js';
 import EditFormView from '../view/edit-form-view.js';
 import EventView from '../view/event-view.js';
+import NoPointsView from '../view/no-points-view.js';
 import Model from '../model/model.js';
+import {FilterType} from '../const.js';
 
 export default class MainPresenter {
   constructor() {
@@ -11,6 +13,8 @@ export default class MainPresenter {
     this.eventsContainer = document.querySelector('.trip-events');
     this.model = new Model();
     this.eventsList = null;
+    this.noPointsComponent = null;
+    this.currentFilter = FilterType.EVERYTHING;
   }
 
   init() {
@@ -25,12 +29,45 @@ export default class MainPresenter {
     this._renderPoints();
   }
 
-  _renderPoints() {
+  _getFilteredPoints() {
     const points = this.model.getPoints();
+
+    switch (this.currentFilter) {
+      case FilterType.FUTURE:
+        return points.filter((point) => new Date(point.dateFrom) > new Date());
+      case FilterType.PRESENT:
+        return points.filter((point) => {
+          const now = new Date();
+          return new Date(point.dateFrom) <= now && new Date(point.dateTo) >= now;
+        });
+      case FilterType.PAST:
+        return points.filter((point) => new Date(point.dateTo) < new Date());
+      default:
+        return points;
+    }
+  }
+
+  _renderPoints() {
+    const points = this._getFilteredPoints();
+
+    if (points.length === 0) {
+      this._renderNoPoints();
+      return;
+    }
+
+    if (this.noPointsComponent) {
+      remove(this.noPointsComponent);
+      this.noPointsComponent = null;
+    }
 
     points.forEach((point) => {
       this._renderPoint(point);
     });
+  }
+
+  _renderNoPoints() {
+    this.noPointsComponent = new NoPointsView(this.currentFilter);
+    render(this.noPointsComponent, this.eventsList);
   }
 
   _renderPoint(point) {
