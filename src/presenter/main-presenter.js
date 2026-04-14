@@ -1,9 +1,8 @@
-import {render, replace, remove} from '../framework/render.js';
+import {render} from '../framework/render.js';
 import FiltersView from '../view/filters-view.js';
 import SortView from '../view/sort-view.js';
-import EditFormView from '../view/edit-form-view.js';
-import EventView from '../view/event-view.js';
 import NoPointsView from '../view/no-points-view.js';
+import PointPresenter from './point-presenter.js';
 import Model from '../model/model.js';
 import {FilterType} from '../const.js';
 
@@ -12,7 +11,7 @@ export default class MainPresenter {
     this.filtersContainer = document.querySelector('.trip-controls__filters');
     this.eventsContainer = document.querySelector('.trip-events');
     this.model = new Model();
-    this.eventsList = null;
+    this.pointPresenters = new Map();
     this.noPointsComponent = null;
     this.currentFilter = FilterType.EVERYTHING;
   }
@@ -21,10 +20,9 @@ export default class MainPresenter {
     render(new FiltersView(), this.filtersContainer);
     render(new SortView(), this.eventsContainer);
 
-    const eventsList = document.createElement('ul');
-    eventsList.classList.add('trip-events__list');
-    this.eventsContainer.appendChild(eventsList);
-    this.eventsList = eventsList;
+    this.eventsList = document.createElement('ul');
+    this.eventsList.classList.add('trip-events__list');
+    this.eventsContainer.appendChild(this.eventsList);
 
     this._renderPoints();
   }
@@ -75,43 +73,24 @@ export default class MainPresenter {
     const pointOffers = this.model.getOffersByType(point.type)
       .filter((offer) => point.offersIds.includes(offer.id));
 
-    const pointComponent = new EventView(point, destination, pointOffers,
-      () => this._replacePointToForm(pointComponent, point, destination, pointOffers)
+    const pointPresenter = new PointPresenter(
+      this.eventsList,
+      this._handlePointChange.bind(this),
+      this._handleModeChange.bind(this)
     );
 
-    render(pointComponent, this.eventsList);
-    pointComponent.setEventListeners();
+    pointPresenter.init(point, destination, pointOffers);
+    this.pointPresenters.set(point.id, pointPresenter);
   }
 
-  _replacePointToForm(pointComponent, point, destination, pointOffers) {
-    const editFormComponent = new EditFormView(point, destination, pointOffers,
-      (evt) => {
-        evt.preventDefault();
-        this._replaceFormToPoint(editFormComponent, point, destination, pointOffers);
-      },
-      () => this._replaceFormToPoint(editFormComponent, point, destination, pointOffers)
-    );
-
-    const onEscKeyDown = (evt) => {
-      if (evt.key === 'Escape') {
-        evt.preventDefault();
-        document.removeEventListener('keydown', onEscKeyDown);
-        this._replaceFormToPoint(editFormComponent, point, destination, pointOffers);
-      }
-    };
-    document.addEventListener('keydown', onEscKeyDown);
-
-    replace(editFormComponent, pointComponent);
-    editFormComponent.setEventListeners();
+  _handlePointChange = (updatedPoint) => {
+    const points = this.model.getPoints();
+    const index = points.findIndex((point) => point.id === updatedPoint.id);
+    points[index] = updatedPoint;
+    this._renderPoints();
   }
 
-  _replaceFormToPoint(editFormComponent, point, destination, pointOffers) {
-    const newPointComponent = new EventView(point, destination, pointOffers,
-      () => this._replacePointToForm(newPointComponent, point, destination, pointOffers)
-    );
-
-    replace(newPointComponent, editFormComponent);
-    newPointComponent.setEventListeners();
-    remove(editFormComponent);
+  _handleModeChange = () => {
+    this.pointPresenters.forEach((presenter) => presenter.resetView());
   }
 }
