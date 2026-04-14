@@ -1,10 +1,11 @@
-import {render} from '../framework/render.js';
+import {render, remove} from '../framework/render.js';
 import FiltersView from '../view/filters-view.js';
 import SortView from '../view/sort-view.js';
 import NoPointsView from '../view/no-points-view.js';
 import PointPresenter from './point-presenter.js';
 import Model from '../model/model.js';
 import {FilterType} from '../const.js';
+
 
 export default class MainPresenter {
   constructor() {
@@ -88,9 +89,9 @@ export default class MainPresenter {
     const index = points.findIndex((point) => point.id === updatedPoint.id);
     points[index] = updatedPoint;
     this._renderPoints();
-  }
+  };
 
   _handleModeChange = () => {
     this.pointPresenters.forEach((presenter) => presenter.resetView());
-  }
+  };
 }

@@ -54,15 +54,15 @@ export default class PointPresenter {
   handleEditClick = () => {
     this.changeMode();
     replace(this.editFormComponent, this.pointComponent);
-  }
+  };
 
   handleFormSubmit = (evt) => {
     evt.preventDefault();
     this.changeData({...this.point, isFavorite: !this.point.isFavorite});
     replace(this.pointComponent, this.editFormComponent);
-  }
+  };
 
   handleCloseClick = () => {
     replace(this.pointComponent, this.editFormComponent);
-  }
+  };
 }
