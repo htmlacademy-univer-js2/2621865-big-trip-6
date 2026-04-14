@@ -81,12 +81,13 @@ function calculateDuration(dateFrom, dateTo) {
 }
 
 export default class EventView extends AbstractView {
-  constructor(point, destination, offers, onEditClick) {
+  constructor(point, destination, offers, onEditClick, onFavoriteClick) {
     super();
     this.point = point;
     this.destination = destination;
     this.offers = offers;
     this._onEditClick = onEditClick;
+    this._onFavoriteClick = onFavoriteClick;
   }
 
   get template() {
@@ -96,5 +97,8 @@ export default class EventView extends AbstractView {
   setEventListeners() {
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this._onEditClick);
+
+    this.element.querySelector('.event__favorite-btn')
+      .addEventListener('click', this._onFavoriteClick);
   }
 }
