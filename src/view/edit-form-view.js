@@ -1,14 +1,26 @@
 import AbstractView from '../framework/view/abstract-view.js';
 
+// formatDate ДОЛЖНА быть ПЕРЕД createEditFormTemplate
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(2);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
 const createEditFormTemplate = (point, destination, offers) => {
   const {type, basePrice, dateFrom, dateTo} = point;
 
   const createOfferSelectorTemplate = (offer, isChecked) => `
     <div class="event__offer-selector">
-      <input class="event__offer-checkbox  visually-hidden" 
-             id="event-offer-${offer.id}-1" 
-             type="checkbox" 
-             name="event-offer-${offer.id}" 
+      <input class="event__offer-checkbox  visually-hidden"
+             id="event-offer-${offer.id}-1"
+             type="checkbox"
+             name="event-offer-${offer.id}"
              ${isChecked ? 'checked' : ''}>
       <label class="event__offer-label" for="event-offer-${offer.id}-1">
         <span class="event__offer-title">${offer.title}</span>
@@ -21,7 +33,6 @@ const createEditFormTemplate = (point, destination, offers) => {
   const offersTemplate = offers
     .map((offer) => createOfferSelectorTemplate(offer, point.offersIds.includes(offer.id)))
     .join('');
-
 
   return `
     <li class="trip-events__item">
@@ -144,17 +155,6 @@ const createEditFormTemplate = (point, destination, offers) => {
     </li>
   `;
 };
-
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(2);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  return `${day}/${month}/${year} ${hours}:${minutes}`;
-}
 
 export default class EditFormView extends AbstractView {
   constructor(point, destination, offers, onFormSubmit, onCloseClick) {

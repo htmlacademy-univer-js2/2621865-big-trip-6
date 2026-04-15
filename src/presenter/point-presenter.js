@@ -7,7 +7,6 @@ export default class PointPresenter {
     this.pointsContainer = pointsContainer;
     this.changeData = changeData;
     this.changeMode = changeMode;
-
     this.pointComponent = null;
     this.editFormComponent = null;
   }
@@ -17,36 +16,37 @@ export default class PointPresenter {
     this.destination = destination;
     this.offers = offers;
 
-    const prevPointComponent = this.pointComponent;
-    const prevEditFormComponent = this.editFormComponent;
+    this.pointComponent = new EventView(
+      point,
+      destination,
+      offers,
+      this.handleEditClick,
+      this.handleFavoriteClick
+    );
 
-    this.pointComponent = new EventView(point, destination, offers, this.handleEditClick);
-    this.editFormComponent = new EditFormView(point, destination, offers, this.handleFormSubmit, this.handleCloseClick);
+    this.editFormComponent = new EditFormView(
+      point,
+      destination,
+      offers,
+      this.handleFormSubmit,
+      this.handleCloseClick
+    );
 
-    if (prevPointComponent === null && prevEditFormComponent === null) {
-      render(this.pointComponent, this.pointsContainer);
-      return;
-    }
-
-    if (this.pointsContainer.contains(prevPointComponent.element)) {
-      replace(this.pointComponent, prevPointComponent);
-    }
-
-    if (this.pointsContainer.contains(prevEditFormComponent.element)) {
-      replace(this.editFormComponent, prevEditFormComponent);
-    }
-
-    remove(prevPointComponent);
-    remove(prevEditFormComponent);
+    render(this.pointComponent, this.pointsContainer);
+    this.pointComponent.setEventListeners();
   }
 
   destroy() {
-    remove(this.pointComponent);
-    remove(this.editFormComponent);
+    if (this.pointComponent) {
+      remove(this.pointComponent);
+    }
+    if (this.editFormComponent) {
+      remove(this.editFormComponent);
+    }
   }
 
   resetView() {
-    if (this.editFormComponent !== null) {
+    if (this.editFormComponent !== null && this.pointComponent !== null) {
       replace(this.pointComponent, this.editFormComponent);
     }
   }
@@ -54,15 +54,21 @@ export default class PointPresenter {
   handleEditClick = () => {
     this.changeMode();
     replace(this.editFormComponent, this.pointComponent);
+    this.editFormComponent.setEventListeners();
+  };
+
+  handleFavoriteClick = () => {
+    this.changeData({...this.point, isFavorite: !this.point.isFavorite});
   };
 
   handleFormSubmit = (evt) => {
     evt.preventDefault();
-    this.changeData({...this.point, isFavorite: !this.point.isFavorite});
     replace(this.pointComponent, this.editFormComponent);
+    this.pointComponent.setEventListeners();
   };
 
   handleCloseClick = () => {
     replace(this.pointComponent, this.editFormComponent);
+    this.pointComponent.setEventListeners();
   };
 }

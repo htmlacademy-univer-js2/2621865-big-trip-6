@@ -30,7 +30,21 @@ const createSortTemplate = () => `
 `;
 
 export default class SortView extends AbstractView {
+  constructor(onSortChange) {
+    super();
+    this._onSortChange = onSortChange;
+  }
+
   get template() {
     return createSortTemplate();
+  }
+
+  setEventListeners() {
+    const sortButtons = this.element.querySelectorAll('.trip-sort__input');
+    sortButtons.forEach((button) => {
+      if (!button.disabled) {
+        button.addEventListener('change', this._onSortChange);
+      }
+    });
   }
 }
