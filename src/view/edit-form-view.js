@@ -211,7 +211,7 @@ export default class EditFormView extends AbstractStatefulView {
       type: newType,
       selectedOffersIds: []
     });
-  }
+  };
 
   _onOfferChange = (evt) => {
     const offerId = evt.target.name.split('-').pop();
@@ -226,5 +226,5 @@ export default class EditFormView extends AbstractStatefulView {
     }
 
     this.updateElement({ selectedOffersIds: newSelectedOffersIds });
-  }
+  };
 }
