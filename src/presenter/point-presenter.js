@@ -24,13 +24,9 @@ export default class PointPresenter {
       this.handleFavoriteClick
     );
 
-    this.editFormComponent = new EditFormView(
-      point,
-      destination,
-      offers,
-      this.handleFormSubmit,
-      this.handleCloseClick
-    );
+    this.editFormComponent = new EditFormView(point, destination, offers);
+    this.editFormComponent.setFormSubmitHandler(this.handleFormSubmit);
+    this.editFormComponent.setCloseClickHandler(this.handleCloseClick);
 
     render(this.pointComponent, this.pointsContainer);
     this.pointComponent.setEventListeners();
@@ -63,6 +59,16 @@ export default class PointPresenter {
 
   handleFormSubmit = (evt) => {
     evt.preventDefault();
+    const updatedPoint = {
+      ...this.point,
+      type: this.editFormComponent._state.type,
+      basePrice: this.editFormComponent._state.basePrice,
+      dateFrom: this.editFormComponent._state.dateFrom,
+      dateTo: this.editFormComponent._state.dateTo,
+      isFavorite: this.editFormComponent._state.isFavorite,
+      offersIds: this.editFormComponent._state.selectedOffersIds
+    };
+    this.changeData(updatedPoint);
     replace(this.pointComponent, this.editFormComponent);
     this.pointComponent.setEventListeners();
   };

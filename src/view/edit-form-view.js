@@ -1,6 +1,5 @@
-import AbstractView from '../framework/view/abstract-view.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 
-// formatDate ДОЛЖНА быть ПЕРЕД createEditFormTemplate
 function formatDate(dateString) {
   const date = new Date(dateString);
   const day = String(date.getDate()).padStart(2, '0');
@@ -12,27 +11,29 @@ function formatDate(dateString) {
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
-const createEditFormTemplate = (point, destination, offers) => {
-  const {type, basePrice, dateFrom, dateTo} = point;
+const createEditFormTemplate = (state, destination, allOffers) => {
+  const {type, basePrice, dateFrom, dateTo, selectedOffersIds} = state;
 
-  const createOfferSelectorTemplate = (offer, isChecked) => `
-    <div class="event__offer-selector">
-      <input class="event__offer-checkbox  visually-hidden"
-             id="event-offer-${offer.id}-1"
-             type="checkbox"
-             name="event-offer-${offer.id}"
-             ${isChecked ? 'checked' : ''}>
-      <label class="event__offer-label" for="event-offer-${offer.id}-1">
-        <span class="event__offer-title">${offer.title}</span>
-        &plus;&euro;&nbsp;
-        <span class="event__offer-price">${offer.price}</span>
-      </label>
-    </div>
-  `;
+  const createOfferSelectorTemplate = (offer) => {
+    const isChecked = selectedOffersIds.includes(offer.id);
+    return `
+      <div class="event__offer-selector">
+        <input class="event__offer-checkbox  visually-hidden"
+               id="event-offer-${offer.id}-1"
+               type="checkbox"
+               name="event-offer-${offer.id}"
+               ${isChecked ? 'checked' : ''}>
+        <label class="event__offer-label" for="event-offer-${offer.id}-1">
+          <span class="event__offer-title">${offer.title}</span>
+          &plus;&euro;&nbsp;
+          <span class="event__offer-price">${offer.price}</span>
+        </label>
+      </div>
+    `;
+  };
 
-  const offersTemplate = offers
-    .map((offer) => createOfferSelectorTemplate(offer, point.offersIds.includes(offer.id)))
-    .join('');
+  const offersForType = allOffers.find((offerGroup) => offerGroup.type === type)?.offers || [];
+  const offersTemplate = offersForType.map((offer) => createOfferSelectorTemplate(offer)).join('');
 
   return `
     <li class="trip-events__item">
@@ -156,24 +157,74 @@ const createEditFormTemplate = (point, destination, offers) => {
   `;
 };
 
-export default class EditFormView extends AbstractView {
-  constructor(point, destination, offers, onFormSubmit, onCloseClick) {
+export default class EditFormView extends AbstractStatefulView {
+  constructor(point, destination, allOffers) {
     super();
-    this.point = point;
+    this._state = this._getStateFromPoint(point);
     this.destination = destination;
-    this.offers = offers;
-    this._onFormSubmit = onFormSubmit;
-    this._onCloseClick = onCloseClick;
+    this.allOffers = allOffers;
+  }
+
+  _getStateFromPoint(point) {
+    return {
+      type: point.type,
+      basePrice: point.basePrice,
+      dateFrom: point.dateFrom,
+      dateTo: point.dateTo,
+      isFavorite: point.isFavorite,
+      selectedOffersIds: [...point.offersIds]
+    };
   }
 
   get template() {
-    return createEditFormTemplate(this.point, this.destination, this.offers);
+    return createEditFormTemplate(this._state, this.destination, this.allOffers);
+  }
+
+  _restoreHandlers() {
+    this.setEventListeners();
   }
 
   setEventListeners() {
-    this.element.querySelector('form')
-      .addEventListener('submit', this._onFormSubmit);
-    this.element.querySelector('.event__rollup-btn')
-      .addEventListener('click', this._onCloseClick);
+    this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this._onCloseClick);
+
+    this.element.querySelectorAll('.event__type-input').forEach((input) => {
+      input.addEventListener('change', this._onTypeChange.bind(this));
+    });
+
+    this.element.querySelectorAll('.event__offer-checkbox').forEach((checkbox) => {
+      checkbox.addEventListener('change', this._onOfferChange.bind(this));
+    });
   }
+
+  setFormSubmitHandler(handler) {
+    this._onFormSubmit = handler;
+  }
+
+  setCloseClickHandler(handler) {
+    this._onCloseClick = handler;
+  }
+
+  _onTypeChange = (evt) => {
+    const newType = evt.target.value;
+    this.updateElement({
+      type: newType,
+      selectedOffersIds: []
+    });
+  };
+
+  _onOfferChange = (evt) => {
+    const offerId = evt.target.name.split('-').pop();
+    const isChecked = evt.target.checked;
+
+    let newSelectedOffersIds = [...this._state.selectedOffersIds];
+
+    if (isChecked) {
+      newSelectedOffersIds.push(offerId);
+    } else {
+      newSelectedOffersIds = newSelectedOffersIds.filter((id) => id !== offerId);
+    }
+
+    this.updateElement({ selectedOffersIds: newSelectedOffersIds });
+  };
 }
