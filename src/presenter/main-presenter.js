@@ -78,7 +78,7 @@ export default class MainPresenter {
           return durationB - durationA;
         });
         break;
-      default: // SortType.DAY
+      default:
         points.sort((a, b) => new Date(a.dateFrom) - new Date(b.dateFrom));
         break;
     }
@@ -148,6 +148,7 @@ export default class MainPresenter {
         });
         render(editForm, this.eventsList);
         editForm.setEventListeners();
+        editForm._restoreHandlers(); // ← ЭТО ВАЖНО ДЛЯ КАЛЕНДАРЯ!
       } else {
         const eventComponent = new EventView(point, destination, pointOffers, () => {
           this._showFormForPoint(point);

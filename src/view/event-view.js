@@ -1,5 +1,8 @@
 import AbstractView from '../framework/view/abstract-view.js';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration.js';
 
+dayjs.extend(duration);
 
 const createOfferTemplate = (offer) => `
   <li class="event__offer">
@@ -11,14 +14,26 @@ const createOfferTemplate = (offer) => `
 
 const createEventTemplate = (point, destination, pointOffers) => {
   const {type, basePrice, dateFrom, dateTo, isFavorite} = point;
-  const date = new Date(dateFrom);
-  const month = date.toLocaleString('en', {month: 'short'}).toUpperCase();
-  const day = date.getDate();
 
-  const startTime = new Date(dateFrom).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
-  const endTime = new Date(dateTo).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+  const date = dayjs(dateFrom);
+  const month = date.format('MMM').toUpperCase();
+  const day = date.format('DD');
 
-  const duration = calculateDuration(dateFrom, dateTo);
+  const startTime = dayjs(dateFrom).format('HH:mm');
+  const endTime = dayjs(dateTo).format('HH:mm');
+
+  const durationMs = dayjs(dateTo).diff(dayjs(dateFrom));
+  const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+  const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  let durationText = '';
+  if (durationHours === 0) {
+    durationText = `${durationMinutes}M`;
+  } else if (durationMinutes === 0) {
+    durationText = `${durationHours}H`;
+  } else {
+    durationText = `${durationHours}H ${durationMinutes}M`;
+  }
 
   const offersTemplate = pointOffers
     .map((offer) => createOfferTemplate(offer))
@@ -29,18 +44,18 @@ const createEventTemplate = (point, destination, pointOffers) => {
   return `
     <li class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${dateFrom.split('T')[0]}">${month} ${day}</time>
+        <time class="event__date" datetime="${dayjs(dateFrom).format('YYYY-MM-DD')}">${month} ${day}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
         <h3 class="event__title">${type} ${destination.name}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${dateFrom}">${startTime}</time>
+            <time class="event__start-time" datetime="${dayjs(dateFrom).format('YYYY-MM-DDTHH:mm')}">${startTime}</time>
             &mdash;
-            <time class="event__end-time" datetime="${dateTo}">${endTime}</time>
+            <time class="event__end-time" datetime="${dayjs(dateTo).format('YYYY-MM-DDTHH:mm')}">${endTime}</time>
           </p>
-          <p class="event__duration">${duration}</p>
+          <p class="event__duration">${durationText}</p>
         </div>
         <p class="event__price">
           &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
@@ -63,23 +78,6 @@ const createEventTemplate = (point, destination, pointOffers) => {
   `;
 };
 
-function calculateDuration(dateFrom, dateTo) {
-  const start = new Date(dateFrom);
-  const end = new Date(dateTo);
-  const diff = end - start;
-
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (hours === 0) {
-    return `${minutes}M`;
-  } else if (minutes === 0) {
-    return `${hours}H`;
-  } else {
-    return `${hours}H ${minutes}M`;
-  }
-}
-
 export default class EventView extends AbstractView {
   constructor(point, destination, offers, onEditClick, onFavoriteClick) {
     super();
@@ -97,7 +95,6 @@ export default class EventView extends AbstractView {
   setEventListeners() {
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this._onEditClick);
-
     this.element.querySelector('.event__favorite-btn')
       .addEventListener('click', this._onFavoriteClick);
   }

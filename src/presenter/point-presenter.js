@@ -28,6 +28,9 @@ export default class PointPresenter {
     this.editFormComponent.setFormSubmitHandler(this.handleFormSubmit);
     this.editFormComponent.setCloseClickHandler(this.handleCloseClick);
 
+    // ВАЖНО: инициализируем flatpickr сразу после создания формы
+    this.editFormComponent._restoreHandlers();
+
     render(this.pointComponent, this.pointsContainer);
     this.pointComponent.setEventListeners();
   }
@@ -44,13 +47,14 @@ export default class PointPresenter {
   resetView() {
     if (this.editFormComponent !== null && this.pointComponent !== null) {
       replace(this.pointComponent, this.editFormComponent);
+      this.editFormComponent._restoreHandlers();
     }
   }
 
   handleEditClick = () => {
     this.changeMode();
     replace(this.editFormComponent, this.pointComponent);
-    this.editFormComponent.setEventListeners();
+    this.editFormComponent._restoreHandlers(); // ВАЖНО!
   };
 
   handleFavoriteClick = () => {
