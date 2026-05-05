@@ -134,7 +134,6 @@ const createEditFormTemplate = (state, destination, allOffers) => {
 export default class EditFormView extends AbstractStatefulView {
   constructor(point, destination, allOffers) {
     super();
-    console.log('1. Конструктор EditFormView');
     this._state = this._getStateFromPoint(point);
     this.destination = destination;
     this.allOffers = allOffers;
@@ -154,18 +153,15 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   get template() {
-    console.log('2. get template вызван');
     return createEditFormTemplate(this._state, this.destination, this.allOffers);
   }
 
   _restoreHandlers() {
-    console.log('3. _restoreHandlers вызван');
     this.setEventListeners();
     this._initFlatpickr();
   }
 
   setEventListeners() {
-    console.log('4. setEventListeners вызван');
     this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
     this.element.querySelector('.event__rollup-btn').addEventListener('click', this._onCloseClick);
 
@@ -179,46 +175,33 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   _initFlatpickr() {
-    console.log('=== _initFlatpickr START ===');
     const startDateInput = this.element.querySelector('#event-start-time-1');
     const endDateInput = this.element.querySelector('#event-end-time-1');
-    console.log('start input:', startDateInput);
-    console.log('end input:', endDateInput);
 
     if (startDateInput && !this._flatpickrStart) {
-      console.log('Инициализируем flatpickr для start');
       this._flatpickrStart = flatpickr(startDateInput, {
         enableTime: true,
         dateFormat: 'd/m/y H:i',
         defaultDate: dayjs(this._state.dateFrom).toDate(),
         onChange: ([date]) => {
-          console.log('Дата начала изменена:', date);
           if (date) {
             this.updateElement({ dateFrom: dayjs(date).toISOString() });
           }
         }
       });
-      console.log('flatpickr start создан:', this._flatpickrStart);
-    } else {
-      console.log('startDateInput не найден или уже инициализирован');
     }
 
     if (endDateInput && !this._flatpickrEnd) {
-      console.log('Инициализируем flatpickr для end');
       this._flatpickrEnd = flatpickr(endDateInput, {
         enableTime: true,
         dateFormat: 'd/m/y H:i',
         defaultDate: dayjs(this._state.dateTo).toDate(),
         onChange: ([date]) => {
-          console.log('Дата окончания изменена:', date);
           if (date) {
             this.updateElement({ dateTo: dayjs(date).toISOString() });
           }
         }
       });
-      console.log('flatpickr end создан:', this._flatpickrEnd);
-    } else {
-      console.log('endDateInput не найден или уже инициализирован');
     }
   }
 
@@ -232,17 +215,15 @@ export default class EditFormView extends AbstractStatefulView {
 
   _onTypeChange = (evt) => {
     const newType = evt.target.value;
-    console.log('Тип изменён:', newType);
     this.updateElement({
       type: newType,
       selectedOffersIds: []
     });
-  }
+  };
 
   _onOfferChange = (evt) => {
     const offerId = evt.target.name.split('-').pop();
     const isChecked = evt.target.checked;
-    console.log('Опция изменена:', offerId, isChecked);
 
     let newSelectedOffersIds = [...this._state.selectedOffersIds];
 
@@ -253,5 +234,5 @@ export default class EditFormView extends AbstractStatefulView {
     }
 
     this.updateElement({ selectedOffersIds: newSelectedOffersIds });
-  }
+  };
 }

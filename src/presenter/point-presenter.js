@@ -27,7 +27,7 @@ export default class PointPresenter {
     this.editFormComponent = new EditFormView(point, destination, offers);
     this.editFormComponent.setFormSubmitHandler(this.handleFormSubmit);
     this.editFormComponent.setCloseClickHandler(this.handleCloseClick);
-    
+
     // ВАЖНО: инициализируем flatpickr сразу после создания формы
     this.editFormComponent._restoreHandlers();
 

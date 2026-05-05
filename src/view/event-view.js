@@ -14,18 +14,18 @@ const createOfferTemplate = (offer) => `
 
 const createEventTemplate = (point, destination, pointOffers) => {
   const {type, basePrice, dateFrom, dateTo, isFavorite} = point;
-  
+
   const date = dayjs(dateFrom);
   const month = date.format('MMM').toUpperCase();
   const day = date.format('DD');
-  
+
   const startTime = dayjs(dateFrom).format('HH:mm');
   const endTime = dayjs(dateTo).format('HH:mm');
-  
+
   const durationMs = dayjs(dateTo).diff(dayjs(dateFrom));
   const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
   const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   let durationText = '';
   if (durationHours === 0) {
     durationText = `${durationMinutes}M`;
@@ -34,11 +34,11 @@ const createEventTemplate = (point, destination, pointOffers) => {
   } else {
     durationText = `${durationHours}H ${durationMinutes}M`;
   }
-  
+
   const offersTemplate = pointOffers
     .map((offer) => createOfferTemplate(offer))
     .join('');
-  
+
   const favoriteClass = isFavorite ? 'event__favorite-btn--active' : '';
 
   return `
