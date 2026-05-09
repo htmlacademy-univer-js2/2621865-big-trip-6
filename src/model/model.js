@@ -1,12 +1,12 @@
 import {destinations} from './destinations.js';
 import {offers as offersData} from './offers.js';
-import {points} from './points.js';
+import {points as pointsData} from './points.js';
 
 class Model {
   constructor() {
     this.destinations = destinations;
     this.offers = offersData;
-    this.points = points;
+    this.points = [...pointsData];
   }
 
   getDestinations() {
@@ -33,6 +33,21 @@ class Model {
   getOfferById(type, offerId) {
     const offers = this.getOffersByType(type);
     return offers.find((offer) => offer.id === offerId);
+  }
+
+  addPoint(point) {
+    this.points = [point, ...this.points];
+  }
+
+  updatePoint(updatedPoint) {
+    const index = this.points.findIndex((point) => point.id === updatedPoint.id);
+    if (index !== -1) {
+      this.points[index] = updatedPoint;
+    }
+  }
+
+  deletePoint(pointId) {
+    this.points = this.points.filter((point) => point.id !== pointId);
   }
 }
 

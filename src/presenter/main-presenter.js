@@ -8,9 +8,10 @@ import Model from '../model/model.js';
 import {FilterType, SortType} from '../const.js';
 
 export default class MainPresenter {
-  constructor() {
+  constructor(eventsContainer, filterModel) {
     this.filtersContainer = document.querySelector('.trip-controls__filters');
-    this.eventsContainer = document.querySelector('.trip-events');
+    this.eventsContainer = eventsContainer;
+    this.filterModel = filterModel;
     this.model = new Model();
     this.noPointsComponent = null;
     this.currentFilter = FilterType.EVERYTHING;
@@ -20,10 +21,13 @@ export default class MainPresenter {
   }
 
   init() {
-    render(new FiltersView(), this.filtersContainer);
+    // Фильтры теперь рендерятся через FilterPresenter, поэтому здесь убираем render(new FiltersView()
     this._renderSort();
     this._renderEventsList();
     this._renderPoints();
+
+    // Подписываемся на изменения фильтра
+    this.filterModel.addObserver(this._handleFilterChange.bind(this));
   }
 
   _renderSort() {
@@ -37,6 +41,12 @@ export default class MainPresenter {
     this.eventsList.classList.add('trip-events__list');
     this.eventsContainer.appendChild(this.eventsList);
   }
+
+  _handleFilterChange = () => {
+    this.currentFilter = this.filterModel.getFilter();
+    this.currentSort = SortType.DAY;
+    this._renderPoints();
+  };
 
   _handleSortChange = (evt) => {
     const newSort = evt.target.dataset.sortType;
@@ -148,7 +158,7 @@ export default class MainPresenter {
         });
         render(editForm, this.eventsList);
         editForm.setEventListeners();
-        editForm._restoreHandlers(); // ← ЭТО ВАЖНО ДЛЯ КАЛЕНДАРЯ!
+        editForm._restoreHandlers(); 
       } else {
         const eventComponent = new EventView(point, destination, pointOffers, () => {
           this._showFormForPoint(point);

@@ -14,7 +14,7 @@ const points = [
     type: 'flight',
     destinationId: '3',
     offersIds: ['4', '5'],
-    basePrice: 160,
+    basePrice: 1600,
     dateFrom: '2019-03-18T12:25',
     dateTo: '2019-03-18T13:35',
     isFavorite: false
