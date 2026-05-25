@@ -33,7 +33,6 @@ export default class Model {
       this._offers = offers;
       this._notify(UpdateType.INIT);
     } catch (err) {
-      console.error('Ошибка загрузки данных:', err);
       this._notify(UpdateType.INIT);
     }
   }
@@ -68,7 +67,6 @@ export default class Model {
         this._notify(UpdateType.PATCH, {action: UserAction.UPDATE_POINT, point: response});
       }
     } catch (err) {
-      console.error('Ошибка обновления точки:', err);
       throw new Error('Не удалось обновить точку');
     }
   }

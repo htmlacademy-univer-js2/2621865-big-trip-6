@@ -88,8 +88,10 @@ export default class MainPresenter {
   };
 
   _getFilteredAndSortedPoints() {
-    if (!this.model) return [];
-    
+    if (!this.model) {
+      return [];
+    }
+
     let points = [...this.model.getPoints()];
 
     switch (this.currentFilter) {
@@ -129,8 +131,10 @@ export default class MainPresenter {
   }
 
   _renderPoints() {
-    if (!this.model) return;
-    
+    if (!this.model) {
+      return;
+    }
+
     const points = this._getFilteredAndSortedPoints();
 
     if (points.length === 0) {
@@ -184,7 +188,7 @@ export default class MainPresenter {
         .filter((offer) => point.offersIds.includes(offer.id));
 
       if (point.id === targetPoint.id) {
-        const editForm = new EditFormView(point, destination, pointOffers, 
+        const editForm = new EditFormView(point, destination, pointOffers,
           (evt) => {
             evt.preventDefault();
             const updatedPoint = {
@@ -197,10 +201,10 @@ export default class MainPresenter {
               offersIds: editForm._state.selectedOffersIds
             };
             this._handlePointChange(updatedPoint);
-          }, 
+          },
           () => {
             this._renderPoints();
-          }, 
+          },
           () => {
             this.deletePoint(point.id);
           }
@@ -232,7 +236,7 @@ export default class MainPresenter {
     if (this.eventsList.querySelector('.event--edit')) {
       return;
     }
-    
+
     this.filterModel.setFilter('FILTER_CHANGE', FilterType.EVERYTHING);
     this.currentSort = SortType.DAY;
     this._closeAllForms();
@@ -281,7 +285,6 @@ export default class MainPresenter {
     try {
       await this.model.updatePoint(updatedPoint);
     } catch (err) {
-      console.error('Ошибка при обновлении');
       this._renderPoints();
     }
   }
