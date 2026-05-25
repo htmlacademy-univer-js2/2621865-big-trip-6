@@ -58,6 +58,27 @@ export default class Model {
     return offerGroup ? offerGroup.offers : [];
   }
 
+  async addPoint(point) {
+    try {
+      const newPoint = await this._api.addPoint(point);
+      this._points = [newPoint, ...this._points];
+      this._notify(UpdateType.MAJOR, {action: UserAction.ADD_POINT, point: newPoint});
+      return newPoint;
+    } catch (err) {
+      throw new Error('Не удалось добавить точку');
+    }
+  }
+
+  async deletePoint(pointId) {
+    try {
+      await this._api.deletePoint(pointId);
+      this._points = this._points.filter((point) => point.id !== pointId);
+      this._notify(UpdateType.MAJOR, {action: UserAction.DELETE_POINT, pointId});
+    } catch (err) {
+      throw new Error('Не удалось удалить точку');
+    }
+  }
+
   async updatePoint(updatedPoint) {
     try {
       const response = await this._api.updatePoint(updatedPoint);
