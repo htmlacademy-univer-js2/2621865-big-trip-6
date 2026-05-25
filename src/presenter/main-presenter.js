@@ -1,29 +1,34 @@
 import {render, remove} from '../framework/render.js';
-import FiltersView from '../view/filters-view.js';
 import SortView from '../view/sort-view.js';
 import EditFormView from '../view/edit-form-view.js';
+import AddFormView from '../view/add-form-view.js';
 import EventView from '../view/event-view.js';
 import NoPointsView from '../view/no-points-view.js';
 import Model from '../model/model.js';
 import {FilterType, SortType} from '../const.js';
 
 export default class MainPresenter {
-  constructor() {
+  constructor(eventsContainer, filterModel) {
     this.filtersContainer = document.querySelector('.trip-controls__filters');
-    this.eventsContainer = document.querySelector('.trip-events');
+    this.eventsContainer = eventsContainer;
+    this.filterModel = filterModel;
     this.model = new Model();
     this.noPointsComponent = null;
     this.currentFilter = FilterType.EVERYTHING;
     this.currentSort = SortType.DAY;
     this.sortComponent = null;
     this.eventsList = null;
+    this.isAddFormOpen = false;
   }
 
   init() {
-    render(new FiltersView(), this.filtersContainer);
     this._renderSort();
     this._renderEventsList();
     this._renderPoints();
+
+    this.filterModel.addObserver(this._handleFilterChange.bind(this));
+
+    document.querySelector('.trip-main__event-add-btn').addEventListener('click', this._handleNewEventClick.bind(this));
   }
 
   _renderSort() {
@@ -38,12 +43,20 @@ export default class MainPresenter {
     this.eventsContainer.appendChild(this.eventsList);
   }
 
+  _handleFilterChange = () => {
+    this.currentFilter = this.filterModel.getFilter();
+    this.currentSort = SortType.DAY;
+    this._closeAllForms();
+    this._renderPoints();
+  };
+
   _handleSortChange = (evt) => {
     const newSort = evt.target.dataset.sortType;
     if (newSort === this.currentSort) {
       return;
     }
     this.currentSort = newSort;
+    this._closeAllForms();
     this._renderPoints();
   };
 
@@ -130,6 +143,8 @@ export default class MainPresenter {
   }
 
   _showFormForPoint(targetPoint) {
+    this._closeAllForms();
+
     const points = this._getFilteredAndSortedPoints();
 
     this.eventsList.innerHTML = '';
@@ -142,13 +157,26 @@ export default class MainPresenter {
       if (point.id === targetPoint.id) {
         const editForm = new EditFormView(point, destination, pointOffers, (evt) => {
           evt.preventDefault();
+          const updatedPoint = {
+            ...point,
+            type: editForm._state.type,
+            basePrice: editForm._state.basePrice,
+            dateFrom: editForm._state.dateFrom,
+            dateTo: editForm._state.dateTo,
+            isFavorite: editForm._state.isFavorite,
+            offersIds: editForm._state.selectedOffersIds
+          };
+
+          this.model.updatePoint(updatedPoint);
           this._renderPoints();
         }, () => {
           this._renderPoints();
+        }, () => {
+          this.deletePoint(point.id);
         });
         render(editForm, this.eventsList);
         editForm.setEventListeners();
-        editForm._restoreHandlers(); // ← ЭТО ВАЖНО ДЛЯ КАЛЕНДАРЯ!
+        editForm._restoreHandlers();
       } else {
         const eventComponent = new EventView(point, destination, pointOffers, () => {
           this._showFormForPoint(point);
@@ -162,5 +190,63 @@ export default class MainPresenter {
         eventComponent.setEventListeners();
       }
     });
+  }
+
+  _closeAllForms() {
+    if (this.eventsList) {
+      const openForms = this.eventsList.querySelectorAll('.event--edit');
+      openForms.forEach((form) => form.remove());
+    }
+  }
+
+  _handleNewEventClick = () => {
+    this.filterModel.setFilter('FILTER_CHANGE', FilterType.EVERYTHING);
+    this.currentSort = SortType.DAY;
+    this._closeAllForms();
+    this._renderPoints();
+    this._renderAddForm();
+  };
+
+  _renderAddForm() {
+    const addForm = new AddFormView(
+      this.model.getDestinations(),
+      this.model.getOffers(),
+      (evt) => {
+        evt.preventDefault();
+        const destination = this.model.getDestinations().find(
+          (dest) => dest.name === addForm._state.destinationName
+        );
+
+        if (!destination) {
+          return;
+        }
+
+        const newPoint = {
+          id: Date.now().toString(),
+          type: addForm._state.type,
+          basePrice: addForm._state.basePrice,
+          dateFrom: addForm._state.dateFrom,
+          dateTo: addForm._state.dateTo,
+          isFavorite: false,
+          destinationId: destination.id,
+          offersIds: addForm._state.selectedOffersIds
+        };
+
+        this.model.addPoint(newPoint);
+        this._renderPoints();
+      },
+      () => {
+        this._renderPoints();
+      }
+    );
+
+    render(addForm, this.eventsList);
+    addForm.setEventListeners();
+    addForm._restoreHandlers();
+  }
+
+  deletePoint(pointId) {
+    this.model.deletePoint(pointId);
+    this._renderPoints();
   }
 }

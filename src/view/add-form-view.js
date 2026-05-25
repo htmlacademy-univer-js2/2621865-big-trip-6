@@ -3,8 +3,8 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import dayjs from 'dayjs';
 
-const createEditFormTemplate = (state, destination, allOffers) => {
-  const {type, basePrice, dateFrom, dateTo, selectedOffersIds} = state;
+const createAddFormTemplate = (state, destinations, allOffers) => {
+  const {type, basePrice, dateFrom, dateTo, selectedOffersIds, destinationName} = state;
 
   const createOfferSelectorTemplate = (offer, isChecked) => `
     <div class="event__offer-selector">
@@ -23,6 +23,8 @@ const createEditFormTemplate = (state, destination, allOffers) => {
 
   const offersForType = allOffers.find((offerGroup) => offerGroup.type === type)?.offers || [];
   const offersTemplate = offersForType.map((offer) => createOfferSelectorTemplate(offer, selectedOffersIds.includes(offer.id))).join('');
+
+  const destinationsOptions = destinations.map((dest) => `<option value="${dest.name}"></option>`).join('');
 
   return `
     <li class="trip-events__item">
@@ -80,11 +82,9 @@ const createEditFormTemplate = (state, destination, allOffers) => {
             <label class="event__label  event__type-output" for="event-destination-1">
               ${type}
             </label>
-            <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${destination.name}" list="destination-list-1">
+            <input class="event__input  event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${destinationName}" list="destination-list-1" autocomplete="off">
             <datalist id="destination-list-1">
-              <option value="Amsterdam"></option>
-              <option value="Geneva"></option>
-              <option value="Chamonix"></option>
+              ${destinationsOptions}
             </datalist>
           </div>
           <div class="event__field-group  event__field-group--time">
@@ -102,10 +102,7 @@ const createEditFormTemplate = (state, destination, allOffers) => {
             <input class="event__input  event__input--price" id="event-price-1" type="number" min="0" step="1" name="event-price" value="${basePrice}">
           </div>
           <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-          <button class="event__reset-btn" type="reset">Delete</button>
-          <button class="event__rollup-btn" type="button">
-            <span class="visually-hidden">Open event</span>
-          </button>
+          <button class="event__reset-btn" type="reset">Cancel</button>
         </header>
         <section class="event__details">
           <section class="event__section  event__section--offers">
@@ -116,13 +113,9 @@ const createEditFormTemplate = (state, destination, allOffers) => {
           </section>
           <section class="event__section  event__section--destination">
             <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-            <p class="event__destination-description">${destination.description}</p>
+            <p class="event__destination-description"></p>
             <div class="event__photos-container">
-              <div class="event__photos-tape">
-                ${destination.pictures.map((pic) => `
-                  <img class="event__photo" src="${pic.src}" alt="${pic.description}">
-                `).join('')}
-              </div>
+              <div class="event__photos-tape"></div>
             </div>
           </section>
         </section>
@@ -131,32 +124,27 @@ const createEditFormTemplate = (state, destination, allOffers) => {
   `;
 };
 
-export default class EditFormView extends AbstractStatefulView {
-  constructor(point, destination, allOffers, onFormSubmit, onCloseClick, onDeleteClick) {
+export default class AddFormView extends AbstractStatefulView {
+  constructor(destinations, allOffers, onFormSubmit, onCancelClick) {
     super();
-    this._state = this._getStateFromPoint(point);
-    this.destination = destination;
+    this._state = {
+      type: 'flight',
+      basePrice: 0,
+      dateFrom: new Date().toISOString(),
+      dateTo: new Date().toISOString(),
+      selectedOffersIds: [],
+      destinationName: ''
+    };
+    this.destinations = destinations;
     this.allOffers = allOffers;
     this._flatpickrStart = null;
     this._flatpickrEnd = null;
     this._onFormSubmit = onFormSubmit;
-    this._onCloseClick = onCloseClick;
-    this._onDeleteClick = onDeleteClick;
-  }
-
-  _getStateFromPoint(point) {
-    return {
-      type: point.type,
-      basePrice: point.basePrice,
-      dateFrom: point.dateFrom,
-      dateTo: point.dateTo,
-      isFavorite: point.isFavorite,
-      selectedOffersIds: [...point.offersIds]
-    };
+    this._onCancelClick = onCancelClick;
   }
 
   get template() {
-    return createEditFormTemplate(this._state, this.destination, this.allOffers);
+    return createAddFormTemplate(this._state, this.destinations, this.allOffers);
   }
 
   _restoreHandlers() {
@@ -166,21 +154,19 @@ export default class EditFormView extends AbstractStatefulView {
 
   setEventListeners() {
     this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
-    this.element.querySelector('.event__rollup-btn').addEventListener('click', this._onCloseClick);
-    this.element.querySelector('.event__reset-btn').addEventListener('click', this._onDeleteClick);
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this._onCancelClick);
 
     this.element.querySelectorAll('.event__type-input').forEach((input) => {
       input.addEventListener('change', this._onTypeChange.bind(this));
     });
 
+    this.element.querySelector('.event__input--destination').addEventListener('change', this._onDestinationChange.bind(this));
+
     this.element.querySelectorAll('.event__offer-checkbox').forEach((checkbox) => {
       checkbox.addEventListener('change', this._onOfferChange.bind(this));
     });
 
-    const priceInput = this.element.querySelector('.event__input--price');
-    if (priceInput) {
-      priceInput.addEventListener('input', this._onPriceChange.bind(this));
-    }
+    this.element.querySelector('.event__input--price').addEventListener('input', this._onPriceChange.bind(this));
   }
 
   _initFlatpickr() {
@@ -214,24 +200,16 @@ export default class EditFormView extends AbstractStatefulView {
     }
   }
 
-  setFormSubmitHandler(handler) {
-    this._onFormSubmit = handler;
-  }
-
-  setCloseClickHandler(handler) {
-    this._onCloseClick = handler;
-  }
-
-  setDeleteClickHandler(handler) {
-    this._onDeleteClick = handler;
-  }
-
   _onTypeChange = (evt) => {
     const newType = evt.target.value;
     this.updateElement({
       type: newType,
       selectedOffersIds: []
     });
+  };
+
+  _onDestinationChange = (evt) => {
+    this.updateElement({ destinationName: evt.target.value });
   };
 
   _onOfferChange = (evt) => {
@@ -250,7 +228,6 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   _onPriceChange = (evt) => {
-    const value = parseInt(evt.target.value, 10);
-    this.updateElement({ basePrice: isNaN(value) ? 0 : value });
+    this.updateElement({ basePrice: parseInt(evt.target.value, 10) || 0 });
   };
 }
