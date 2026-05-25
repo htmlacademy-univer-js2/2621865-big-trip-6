@@ -1,13 +1,11 @@
-import {destinations} from './destinations.js';
-import {offers as offersData} from './offers.js';
-import {points as pointsData} from './points.js';
 import {UpdateType, UserAction} from '../const.js';
 
 export default class Model {
-  constructor() {
-    this.destinations = destinations;
-    this.offers = offersData;
-    this.points = [...pointsData];
+  constructor(api) {
+    this._api = api;
+    this._destinations = [];
+    this._offers = [];
+    this._points = [];
     this._observers = [];
   }
 
@@ -23,47 +21,53 @@ export default class Model {
     this._observers.forEach((observer) => observer(updateType, data));
   }
 
-  getDestinations() {
-    return this.destinations;
-  }
-
-  getOffers() {
-    return this.offers;
-  }
-
-  getPoints() {
-    return this.points;
-  }
-
-  getDestinationById(id) {
-    return this.destinations.find((dest) => dest.id === id);
-  }
-
-  getOffersByType(type) {
-    const offerGroup = this.offers.find((offer) => offer.type === type);
-    return offerGroup ? offerGroup.offers : [];
-  }
-
-  getOfferById(type, offerId) {
-    const offers = this.getOffersByType(type);
-    return offers.find((offer) => offer.id === offerId);
-  }
-
-  addPoint(point) {
-    this.points = [point, ...this.points];
-    this._notify(UpdateType.MAJOR, {action: UserAction.ADD_POINT, point});
-  }
-
-  updatePoint(updatedPoint) {
-    const index = this.points.findIndex((point) => point.id === updatedPoint.id);
-    if (index !== -1) {
-      this.points[index] = updatedPoint;
-      this._notify(UpdateType.MINOR, {action: UserAction.UPDATE_POINT, point: updatedPoint});
+  async init() {
+    try {
+      const [points, destinations, offers] = await Promise.all([
+        this._api.getPoints(),
+        this._api.getDestinations(),
+        this._api.getOffers()
+      ]);
+      this._points = points;
+      this._destinations = destinations;
+      this._offers = offers;
+      this._notify(UpdateType.INIT);
+    } catch (err) {
+      this._notify(UpdateType.INIT);
     }
   }
 
-  deletePoint(pointId) {
-    this.points = this.points.filter((point) => point.id !== pointId);
-    this._notify(UpdateType.MAJOR, {action: UserAction.DELETE_POINT, pointId});
+  getDestinations() {
+    return this._destinations;
+  }
+
+  getOffers() {
+    return this._offers;
+  }
+
+  getPoints() {
+    return this._points;
+  }
+
+  getDestinationById(id) {
+    return this._destinations.find((dest) => dest.id === id);
+  }
+
+  getOffersByType(type) {
+    const offerGroup = this._offers.find((offer) => offer.type === type);
+    return offerGroup ? offerGroup.offers : [];
+  }
+
+  async updatePoint(updatedPoint) {
+    try {
+      const response = await this._api.updatePoint(updatedPoint);
+      const index = this._points.findIndex((point) => point.id === response.id);
+      if (index !== -1) {
+        this._points[index] = response;
+        this._notify(UpdateType.PATCH, {action: UserAction.UPDATE_POINT, point: response});
+      }
+    } catch (err) {
+      throw new Error('Не удалось обновить точку');
+    }
   }
 }

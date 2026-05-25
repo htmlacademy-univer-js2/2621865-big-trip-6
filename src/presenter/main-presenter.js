@@ -4,31 +4,58 @@ import EditFormView from '../view/edit-form-view.js';
 import AddFormView from '../view/add-form-view.js';
 import EventView from '../view/event-view.js';
 import NoPointsView from '../view/no-points-view.js';
-import Model from '../model/model.js';
-import {FilterType, SortType} from '../const.js';
+import LoadingView from '../view/loading-view.js';
+import {FilterType, SortType, UpdateType} from '../const.js';
 
 export default class MainPresenter {
   constructor(eventsContainer, filterModel) {
     this.filtersContainer = document.querySelector('.trip-controls__filters');
     this.eventsContainer = eventsContainer;
     this.filterModel = filterModel;
-    this.model = new Model();
+    this.model = null;
     this.noPointsComponent = null;
     this.currentFilter = FilterType.EVERYTHING;
     this.currentSort = SortType.DAY;
     this.sortComponent = null;
     this.eventsList = null;
     this.isAddFormOpen = false;
+    this.loadingComponent = null;
+  }
+
+  setModel(model) {
+    this.model = model;
+    this.model.addObserver(this._handleModelChange.bind(this));
   }
 
   init() {
     this._renderSort();
     this._renderEventsList();
-    this._renderPoints();
+    this._renderLoading();
 
     this.filterModel.addObserver(this._handleFilterChange.bind(this));
-
     document.querySelector('.trip-main__event-add-btn').addEventListener('click', this._handleNewEventClick.bind(this));
+  }
+
+  _handleModelChange = (updateType) => {
+    if (updateType === UpdateType.INIT) {
+      this._removeLoading();
+      this._renderPoints();
+    }
+    if (updateType === UpdateType.PATCH) {
+      this._renderPoints();
+    }
+  };
+
+  _renderLoading() {
+    this.loadingComponent = new LoadingView();
+    render(this.loadingComponent, this.eventsContainer);
+  }
+
+  _removeLoading() {
+    if (this.loadingComponent) {
+      remove(this.loadingComponent);
+      this.loadingComponent = null;
+    }
   }
 
   _renderSort() {
@@ -61,6 +88,10 @@ export default class MainPresenter {
   };
 
   _getFilteredAndSortedPoints() {
+    if (!this.model) {
+      return [];
+    }
+
     let points = [...this.model.getPoints()];
 
     switch (this.currentFilter) {
@@ -100,6 +131,10 @@ export default class MainPresenter {
   }
 
   _renderPoints() {
+    if (!this.model) {
+      return;
+    }
+
     const points = this._getFilteredAndSortedPoints();
 
     if (points.length === 0) {
@@ -132,10 +167,8 @@ export default class MainPresenter {
     const eventComponent = new EventView(point, destination, pointOffers, () => {
       this._showFormForPoint(point);
     }, () => {
-      const points = this.model.getPoints();
-      const index = points.findIndex((p) => p.id === point.id);
-      points[index] = {...point, isFavorite: !point.isFavorite};
-      this._renderPoints();
+      const updatedPoint = {...point, isFavorite: !point.isFavorite};
+      this._handlePointChange(updatedPoint);
     });
 
     render(eventComponent, this.eventsList);
@@ -155,25 +188,27 @@ export default class MainPresenter {
         .filter((offer) => point.offersIds.includes(offer.id));
 
       if (point.id === targetPoint.id) {
-        const editForm = new EditFormView(point, destination, pointOffers, (evt) => {
-          evt.preventDefault();
-          const updatedPoint = {
-            ...point,
-            type: editForm._state.type,
-            basePrice: editForm._state.basePrice,
-            dateFrom: editForm._state.dateFrom,
-            dateTo: editForm._state.dateTo,
-            isFavorite: editForm._state.isFavorite,
-            offersIds: editForm._state.selectedOffersIds
-          };
-
-          this.model.updatePoint(updatedPoint);
-          this._renderPoints();
-        }, () => {
-          this._renderPoints();
-        }, () => {
-          this.deletePoint(point.id);
-        });
+        const editForm = new EditFormView(point, destination, pointOffers,
+          (evt) => {
+            evt.preventDefault();
+            const updatedPoint = {
+              ...point,
+              type: editForm._state.type,
+              basePrice: editForm._state.basePrice,
+              dateFrom: editForm._state.dateFrom,
+              dateTo: editForm._state.dateTo,
+              isFavorite: editForm._state.isFavorite,
+              offersIds: editForm._state.selectedOffersIds
+            };
+            this._handlePointChange(updatedPoint);
+          },
+          () => {
+            this._renderPoints();
+          },
+          () => {
+            this.deletePoint(point.id);
+          }
+        );
         render(editForm, this.eventsList);
         editForm.setEventListeners();
         editForm._restoreHandlers();
@@ -181,10 +216,8 @@ export default class MainPresenter {
         const eventComponent = new EventView(point, destination, pointOffers, () => {
           this._showFormForPoint(point);
         }, () => {
-          const pointsArr = this.model.getPoints();
-          const index = pointsArr.findIndex((p) => p.id === point.id);
-          pointsArr[index] = {...point, isFavorite: !point.isFavorite};
-          this._renderPoints();
+          const updatedPoint = {...point, isFavorite: !point.isFavorite};
+          this._handlePointChange(updatedPoint);
         });
         render(eventComponent, this.eventsList);
         eventComponent.setEventListeners();
@@ -200,10 +233,13 @@ export default class MainPresenter {
   }
 
   _handleNewEventClick = () => {
+    if (this.eventsList.querySelector('.event--edit')) {
+      return;
+    }
+
     this.filterModel.setFilter('FILTER_CHANGE', FilterType.EVERYTHING);
     this.currentSort = SortType.DAY;
     this._closeAllForms();
-    this._renderPoints();
     this._renderAddForm();
   };
 
@@ -211,7 +247,7 @@ export default class MainPresenter {
     const addForm = new AddFormView(
       this.model.getDestinations(),
       this.model.getOffers(),
-      (evt) => {
+      async (evt) => {
         evt.preventDefault();
         const destination = this.model.getDestinations().find(
           (dest) => dest.name === addForm._state.destinationName
@@ -240,9 +276,17 @@ export default class MainPresenter {
       }
     );
 
-    render(addForm, this.eventsList);
+    this.eventsList.insertAdjacentElement('afterbegin', addForm.element);
     addForm.setEventListeners();
     addForm._restoreHandlers();
+  }
+
+  async _handlePointChange(updatedPoint) {
+    try {
+      await this.model.updatePoint(updatedPoint);
+    } catch (err) {
+      this._renderPoints();
+    }
   }
 
   deletePoint(pointId) {
