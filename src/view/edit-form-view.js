@@ -12,6 +12,7 @@ const createEditFormTemplate = (state, destination, allOffers) => {
              id="event-offer-${offer.id}-1"
              type="checkbox"
              name="event-offer-${offer.id}"
+             value="${offer.id}"
              ${isChecked ? 'checked' : ''}>
       <label class="event__offer-label" for="event-offer-${offer.id}-1">
         <span class="event__offer-title">${offer.title}</span>
@@ -173,7 +174,8 @@ export default class EditFormView extends AbstractStatefulView {
       input.addEventListener('change', this._onTypeChange.bind(this));
     });
 
-    this.element.querySelectorAll('.event__offer-checkbox').forEach((checkbox) => {
+    const checkboxes = this.element.querySelectorAll('.event__offer-checkbox');
+    checkboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', this._onOfferChange.bind(this));
     });
 
@@ -214,6 +216,13 @@ export default class EditFormView extends AbstractStatefulView {
     }
   }
 
+  shake() {
+    this.element.classList.add('shake');
+    setTimeout(() => {
+      this.element.classList.remove('shake');
+    }, 600);
+  }
+
   setFormSubmitHandler(handler) {
     this._onFormSubmit = handler;
   }
@@ -232,16 +241,19 @@ export default class EditFormView extends AbstractStatefulView {
       type: newType,
       selectedOffersIds: []
     });
+    setTimeout(() => this._restoreHandlers(), 0);
   };
 
   _onOfferChange = (evt) => {
-    const offerId = evt.target.name.split('-').pop();
+    const offerId = evt.target.value;
     const isChecked = evt.target.checked;
 
     let newSelectedOffersIds = [...this._state.selectedOffersIds];
 
     if (isChecked) {
-      newSelectedOffersIds.push(offerId);
+      if (!newSelectedOffersIds.includes(offerId)) {
+        newSelectedOffersIds.push(offerId);
+      }
     } else {
       newSelectedOffersIds = newSelectedOffersIds.filter((id) => id !== offerId);
     }

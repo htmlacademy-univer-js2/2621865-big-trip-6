@@ -1,4 +1,5 @@
 import {render, remove} from '../framework/render.js';
+import UiBlocker from '../framework/ui-blocker/ui-blocker.js';
 import SortView from '../view/sort-view.js';
 import EditFormView from '../view/edit-form-view.js';
 import AddFormView from '../view/add-form-view.js';
@@ -20,6 +21,7 @@ export default class MainPresenter {
     this.eventsList = null;
     this.isAddFormOpen = false;
     this.loadingComponent = null;
+    this._uiBlocker = new UiBlocker({lowerLimit: 500, upperLimit: 700});
   }
 
   setModel(model) {
@@ -41,7 +43,7 @@ export default class MainPresenter {
       this._removeLoading();
       this._renderPoints();
     }
-    if (updateType === UpdateType.PATCH) {
+    if (updateType === UpdateType.PATCH || updateType === UpdateType.MAJOR) {
       this._renderPoints();
     }
   };
@@ -166,9 +168,9 @@ export default class MainPresenter {
 
     const eventComponent = new EventView(point, destination, pointOffers, () => {
       this._showFormForPoint(point);
-    }, () => {
+    }, async () => {
       const updatedPoint = {...point, isFavorite: !point.isFavorite};
-      this._handlePointChange(updatedPoint);
+      await this._handlePointChange(updatedPoint);
     });
 
     render(eventComponent, this.eventsList);
@@ -188,25 +190,55 @@ export default class MainPresenter {
         .filter((offer) => point.offersIds.includes(offer.id));
 
       if (point.id === targetPoint.id) {
-        const editForm = new EditFormView(point, destination, pointOffers,
-          (evt) => {
+        const editForm = new EditFormView(
+          point,
+          destination,
+          this.model.getOffers(),
+          async (evt) => {
             evt.preventDefault();
-            const updatedPoint = {
-              ...point,
-              type: editForm._state.type,
-              basePrice: editForm._state.basePrice,
-              dateFrom: editForm._state.dateFrom,
-              dateTo: editForm._state.dateTo,
-              isFavorite: editForm._state.isFavorite,
-              offersIds: editForm._state.selectedOffersIds
-            };
-            this._handlePointChange(updatedPoint);
+
+            this._uiBlocker.block();
+            const saveBtn = editForm.element.querySelector('.event__save-btn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+              const updatedPoint = {
+                ...point,
+                type: editForm._state.type,
+                basePrice: editForm._state.basePrice,
+                dateFrom: editForm._state.dateFrom,
+                dateTo: editForm._state.dateTo,
+                isFavorite: editForm._state.isFavorite,
+                offersIds: editForm._state.selectedOffersIds
+              };
+              await this._handlePointChange(updatedPoint);
+              this._renderPoints();
+            } catch (err) {
+              editForm.shake();
+            } finally {
+              saveBtn.textContent = originalText;
+              this._uiBlocker.unblock();
+            }
           },
           () => {
             this._renderPoints();
           },
-          () => {
-            this.deletePoint(point.id);
+          async () => {
+            this._uiBlocker.block();
+            const deleteBtn = editForm.element.querySelector('.event__reset-btn');
+            const originalText = deleteBtn.textContent;
+            deleteBtn.textContent = 'Deleting...';
+
+            try {
+              await this.model.deletePoint(point.id);
+              this._renderPoints();
+            } catch (err) {
+              editForm.shake();
+            } finally {
+              deleteBtn.textContent = originalText;
+              this._uiBlocker.unblock();
+            }
           }
         );
         render(editForm, this.eventsList);
@@ -215,9 +247,9 @@ export default class MainPresenter {
       } else {
         const eventComponent = new EventView(point, destination, pointOffers, () => {
           this._showFormForPoint(point);
-        }, () => {
+        }, async () => {
           const updatedPoint = {...point, isFavorite: !point.isFavorite};
-          this._handlePointChange(updatedPoint);
+          await this._handlePointChange(updatedPoint);
         });
         render(eventComponent, this.eventsList);
         eventComponent.setEventListeners();
@@ -249,30 +281,46 @@ export default class MainPresenter {
       this.model.getOffers(),
       async (evt) => {
         evt.preventDefault();
-        const destination = this.model.getDestinations().find(
-          (dest) => dest.name === addForm._state.destinationName
-        );
+        this._uiBlocker.block();
+        const saveBtn = addForm.element.querySelector('.event__save-btn');
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Saving...';
 
-        if (!destination) {
-          return;
+        try {
+          const destination = this.model.getDestinations().find(
+            (dest) => dest.name === addForm._state.destinationName
+          );
+
+          if (!destination) {
+            throw new Error('Выберите пункт назначения');
+          }
+
+          const newPoint = {
+            type: addForm._state.type,
+            basePrice: addForm._state.basePrice,
+            dateFrom: addForm._state.dateFrom,
+            dateTo: addForm._state.dateTo,
+            isFavorite: false,
+            destinationId: destination.id,
+            offersIds: addForm._state.selectedOffersIds
+          };
+
+          await this.model.addPoint(newPoint);
+
+          const createdPoint = await this.model.addPoint(newPoint);
+          if (createdPoint) {
+            this._renderPoints();
+            addForm.element.remove();
+          }
+        } catch (err) {
+          addForm.shake();
+        } finally {
+          saveBtn.textContent = originalText;
+          this._uiBlocker.unblock();
         }
-
-        const newPoint = {
-          id: Date.now().toString(),
-          type: addForm._state.type,
-          basePrice: addForm._state.basePrice,
-          dateFrom: addForm._state.dateFrom,
-          dateTo: addForm._state.dateTo,
-          isFavorite: false,
-          destinationId: destination.id,
-          offersIds: addForm._state.selectedOffersIds
-        };
-
-        this.model.addPoint(newPoint);
-        this._renderPoints();
       },
       () => {
-        this._renderPoints();
+        addForm.element.remove();
       }
     );
 
@@ -282,15 +330,6 @@ export default class MainPresenter {
   }
 
   async _handlePointChange(updatedPoint) {
-    try {
-      await this.model.updatePoint(updatedPoint);
-    } catch (err) {
-      this._renderPoints();
-    }
-  }
-
-  deletePoint(pointId) {
-    this.model.deletePoint(pointId);
-    this._renderPoints();
+    await this.model.updatePoint(updatedPoint);
   }
 }

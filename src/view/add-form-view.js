@@ -12,6 +12,7 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
              id="event-offer-${offer.id}-1"
              type="checkbox"
              name="event-offer-${offer.id}"
+             value="${offer.id}"
              ${isChecked ? 'checked' : ''}>
       <label class="event__offer-label" for="event-offer-${offer.id}-1">
         <span class="event__offer-title">${offer.title}</span>
@@ -127,11 +128,14 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
 export default class AddFormView extends AbstractStatefulView {
   constructor(destinations, allOffers, onFormSubmit, onCancelClick) {
     super();
+    const now = new Date();
+    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
     this._state = {
       type: 'flight',
       basePrice: 0,
-      dateFrom: new Date().toISOString(),
-      dateTo: new Date().toISOString(),
+      dateFrom: now.toISOString(),
+      dateTo: oneHourLater.toISOString(),
       selectedOffersIds: [],
       destinationName: ''
     };
@@ -154,19 +158,30 @@ export default class AddFormView extends AbstractStatefulView {
 
   setEventListeners() {
     this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
-    this.element.querySelector('.event__reset-btn').addEventListener('click', this._onCancelClick);
+
+    const cancelBtn = this.element.querySelector('.event__reset-btn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', this._onCancelClick);
+    }
 
     this.element.querySelectorAll('.event__type-input').forEach((input) => {
       input.addEventListener('change', this._onTypeChange.bind(this));
     });
 
-    this.element.querySelector('.event__input--destination').addEventListener('change', this._onDestinationChange.bind(this));
+    const destinationInput = this.element.querySelector('.event__input--destination');
+    if (destinationInput) {
+      destinationInput.addEventListener('change', this._onDestinationChange.bind(this));
+    }
 
-    this.element.querySelectorAll('.event__offer-checkbox').forEach((checkbox) => {
+    const priceInput = this.element.querySelector('.event__input--price');
+    if (priceInput) {
+      priceInput.addEventListener('input', this._onPriceChange.bind(this));
+    }
+
+    const checkboxes = this.element.querySelectorAll('.event__offer-checkbox');
+    checkboxes.forEach((checkbox) => {
       checkbox.addEventListener('change', this._onOfferChange.bind(this));
     });
-
-    this.element.querySelector('.event__input--price').addEventListener('input', this._onPriceChange.bind(this));
   }
 
   _initFlatpickr() {
@@ -200,12 +215,20 @@ export default class AddFormView extends AbstractStatefulView {
     }
   }
 
+  shake() {
+    this.element.classList.add('shake');
+    setTimeout(() => {
+      this.element.classList.remove('shake');
+    }, 600);
+  }
+
   _onTypeChange = (evt) => {
     const newType = evt.target.value;
     this.updateElement({
       type: newType,
       selectedOffersIds: []
     });
+    setTimeout(() => this._restoreHandlers(), 0);
   };
 
   _onDestinationChange = (evt) => {
@@ -213,13 +236,15 @@ export default class AddFormView extends AbstractStatefulView {
   };
 
   _onOfferChange = (evt) => {
-    const offerId = evt.target.name.split('-').pop();
+    const offerId = evt.target.value;
     const isChecked = evt.target.checked;
 
     let newSelectedOffersIds = [...this._state.selectedOffersIds];
 
     if (isChecked) {
-      newSelectedOffersIds.push(offerId);
+      if (!newSelectedOffersIds.includes(offerId)) {
+        newSelectedOffersIds.push(offerId);
+      }
     } else {
       newSelectedOffersIds = newSelectedOffersIds.filter((id) => id !== offerId);
     }
@@ -228,6 +253,7 @@ export default class AddFormView extends AbstractStatefulView {
   };
 
   _onPriceChange = (evt) => {
-    this.updateElement({ basePrice: parseInt(evt.target.value, 10) || 0 });
+    const value = parseInt(evt.target.value, 10);
+    this.updateElement({ basePrice: isNaN(value) ? 0 : value });
   };
 }

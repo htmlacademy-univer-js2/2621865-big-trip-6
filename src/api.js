@@ -1,5 +1,5 @@
 const AUTHORIZATION = 'Basic bigtrip123456';
-const END_POINT = 'https://21.objects.pages.academy/big-trip';
+const END_POINT = 'https://24.objects.htmlacademy.pro/big-trip';
 
 export default class Api {
   constructor(endPoint = END_POINT, authorization = AUTHORIZATION) {
@@ -46,6 +46,24 @@ export default class Api {
     });
     const updatedPoint = await response.json();
     return this._adaptToClient(updatedPoint);
+  }
+
+  async addPoint(point) {
+    const response = await this._load({
+      url: 'points',
+      method: 'POST',
+      body: JSON.stringify(this._adaptToServer(point)),
+      headers: new Headers({'Content-Type': 'application/json'})
+    });
+    const newPoint = await response.json();
+    return this._adaptToClient(newPoint);
+  }
+
+  async deletePoint(pointId) {
+    await this._load({
+      url: `points/${pointId}`,
+      method: 'DELETE'
+    });
   }
 
   _adaptToServer(point) {
