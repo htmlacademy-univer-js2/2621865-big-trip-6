@@ -7,6 +7,7 @@ import EventView from '../view/event-view.js';
 import NoPointsView from '../view/no-points-view.js';
 import LoadingView from '../view/loading-view.js';
 import {FilterType, SortType, UpdateType} from '../const.js';
+import TripInfoView from '../view/trip-info-view.js';
 
 export default class MainPresenter {
   constructor(eventsContainer, filterModel) {
@@ -22,6 +23,7 @@ export default class MainPresenter {
     this.isAddFormOpen = false;
     this.loadingComponent = null;
     this._uiBlocker = new UiBlocker({lowerLimit: 500, upperLimit: 700});
+    this.tripInfoComponent = null;
   }
 
   setModel(model) {
@@ -30,6 +32,7 @@ export default class MainPresenter {
   }
 
   init() {
+    this._renderTripInfo();
     this._renderSort();
     this._renderEventsList();
     this._renderLoading();
@@ -38,12 +41,79 @@ export default class MainPresenter {
     document.querySelector('.trip-main__event-add-btn').addEventListener('click', this._handleNewEventClick.bind(this));
   }
 
+  _renderTripInfo() {
+    const points = this.model.getPoints();
+
+    const uniqueDestinations = [...new Set(points.map((point) => {
+      const destination = this.model.getDestinationById(point.destinationId);
+      return destination ? destination.name : '';
+    }).filter(Boolean))];
+
+    let route = '';
+    if (uniqueDestinations.length === 0) {
+      route = '';
+    } else if (uniqueDestinations.length <= 3) {
+      route = uniqueDestinations.join(' &mdash; ');
+    } else {
+      route = `${uniqueDestinations[0]} &mdash; ... &mdash; ${uniqueDestinations[uniqueDestinations.length - 1]}`;
+    }
+
+    if (points.length === 0) {
+      const tripInfoElement = document.querySelector('.trip-info');
+      if (tripInfoElement) {
+        tripInfoElement.remove();
+      }
+      return;
+    }
+    const sortedPoints = [...points].sort((a, b) => new Date(a.dateFrom) - new Date(b.dateFrom));
+    const startDate = new Date(sortedPoints[0].dateFrom);
+    const endDate = new Date(sortedPoints[sortedPoints.length - 1].dateTo);
+
+    const formatMonth = (date) => date.toLocaleString('en', {month: 'short'}).toUpperCase();
+    const formatDay = (date) => date.getDate();
+
+    const startMonth = formatMonth(startDate);
+    const startDay = formatDay(startDate);
+    const endMonth = formatMonth(endDate);
+    const endDay = formatDay(endDate);
+
+    let dates = '';
+    if (startMonth === endMonth) {
+      dates = `${startMonth} ${startDay}&nbsp;&mdash;&nbsp;${endDay}`;
+    } else {
+      dates = `${startMonth} ${startDay}&nbsp;&mdash;&nbsp;${endMonth} ${endDay}`;
+    }
+
+    let totalCost = 0;
+    points.forEach((point) => {
+      totalCost += point.basePrice;
+      point.offersIds.forEach((offerId) => {
+        const offer = this.model.getOfferById(point.type, offerId);
+        if (offer) {
+          totalCost += offer.price;
+        }
+      });
+    });
+    const tripInfoContainer = document.querySelector('.trip-main');
+    const oldTripInfo = tripInfoContainer.querySelector('.trip-info');
+
+    this.tripInfoComponent = new TripInfoView(route, dates, totalCost);
+
+    if (oldTripInfo) {
+      oldTripInfo.remove();
+    }
+
+    tripInfoContainer.insertBefore(this.tripInfoComponent.element, tripInfoContainer.firstChild);
+  }
+
   _handleModelChange = (updateType) => {
     if (updateType === UpdateType.INIT) {
       this._removeLoading();
+      this._renderTripInfo();
       this._renderPoints();
     }
     if (updateType === UpdateType.PATCH || updateType === UpdateType.MAJOR) {
+      this._renderTripInfo();
       this._renderPoints();
     }
   };
@@ -304,8 +374,6 @@ export default class MainPresenter {
             destinationId: destination.id,
             offersIds: addForm._state.selectedOffersIds
           };
-
-          await this.model.addPoint(newPoint);
 
           const createdPoint = await this.model.addPoint(newPoint);
           if (createdPoint) {

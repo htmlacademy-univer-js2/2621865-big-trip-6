@@ -58,6 +58,11 @@ export default class Model {
     return offerGroup ? offerGroup.offers : [];
   }
 
+  getOfferById(type, offerId) {
+    const offerGroup = this._offers.find((offer) => offer.type === type);
+    return offerGroup ? offerGroup.offers.find((offer) => offer.id === offerId) : null;
+  }
+
   async addPoint(point) {
     try {
       const newPoint = await this._api.addPoint(point);

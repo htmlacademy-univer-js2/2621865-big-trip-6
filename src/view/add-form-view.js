@@ -152,6 +152,14 @@ export default class AddFormView extends AbstractStatefulView {
   }
 
   _restoreHandlers() {
+    if (this._flatpickrStart) {
+      this._flatpickrStart.destroy();
+      this._flatpickrStart = null;
+    }
+    if (this._flatpickrEnd) {
+      this._flatpickrEnd.destroy();
+      this._flatpickrEnd = null;
+    }
     this.setEventListeners();
     this._initFlatpickr();
   }
@@ -185,34 +193,36 @@ export default class AddFormView extends AbstractStatefulView {
   }
 
   _initFlatpickr() {
-    const startDateInput = this.element.querySelector('#event-start-time-1');
-    const endDateInput = this.element.querySelector('#event-end-time-1');
+    setTimeout(() => {
+      const startDateInput = this.element.querySelector('#event-start-time-1');
+      const endDateInput = this.element.querySelector('#event-end-time-1');
 
-    if (startDateInput && !this._flatpickrStart) {
-      this._flatpickrStart = flatpickr(startDateInput, {
-        enableTime: true,
-        dateFormat: 'd/m/y H:i',
-        defaultDate: dayjs(this._state.dateFrom).toDate(),
-        onChange: ([date]) => {
-          if (date) {
-            this.updateElement({ dateFrom: dayjs(date).toISOString() });
+      if (startDateInput && !this._flatpickrStart) {
+        this._flatpickrStart = flatpickr(startDateInput, {
+          enableTime: true,
+          dateFormat: 'd/m/y H:i',
+          defaultDate: dayjs(this._state.dateFrom).toDate(),
+          onChange: ([date]) => {
+            if (date) {
+              this.updateElement({ dateFrom: dayjs(date).toISOString() });
+            }
           }
-        }
-      });
-    }
+        });
+      }
 
-    if (endDateInput && !this._flatpickrEnd) {
-      this._flatpickrEnd = flatpickr(endDateInput, {
-        enableTime: true,
-        dateFormat: 'd/m/y H:i',
-        defaultDate: dayjs(this._state.dateTo).toDate(),
-        onChange: ([date]) => {
-          if (date) {
-            this.updateElement({ dateTo: dayjs(date).toISOString() });
+      if (endDateInput && !this._flatpickrEnd) {
+        this._flatpickrEnd = flatpickr(endDateInput, {
+          enableTime: true,
+          dateFormat: 'd/m/y H:i',
+          defaultDate: dayjs(this._state.dateTo).toDate(),
+          onChange: ([date]) => {
+            if (date) {
+              this.updateElement({ dateTo: dayjs(date).toISOString() });
+            }
           }
-        }
-      });
-    }
+        });
+      }
+    }, 50);
   }
 
   shake() {
@@ -228,7 +238,6 @@ export default class AddFormView extends AbstractStatefulView {
       type: newType,
       selectedOffersIds: []
     });
-    setTimeout(() => this._restoreHandlers(), 0);
   };
 
   _onDestinationChange = (evt) => {
