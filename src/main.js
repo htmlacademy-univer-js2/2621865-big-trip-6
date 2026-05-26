@@ -11,7 +11,7 @@ const api = new Api();
 const filterModel = new FilterModel();
 const model = new Model(api);
 const mainPresenter = new MainPresenter(eventsContainer, filterModel);
-const filterPresenter = new FilterPresenter(filtersContainer, filterModel);
+const filterPresenter = new FilterPresenter(filtersContainer, filterModel, model); // ← передаём model как pointsModel
 
 mainPresenter.setModel(model);
 filterPresenter.init();
