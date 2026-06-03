@@ -1,4 +1,4 @@
-const AUTHORIZATION = 'Basic bigtrip123456';
+const AUTHORIZATION = `Basic random-${Math.random()}`;
 const END_POINT = 'https://24.objects.htmlacademy.pro/big-trip';
 
 export default class Api {
@@ -7,34 +7,42 @@ export default class Api {
     this._authorization = authorization;
   }
 
-  async _load({url, method = 'GET', body = null, headers = new Headers()}) {
-    headers.append('Authorization', this._authorization);
+async _load({url, method = 'GET', body = null, headers = new Headers()}) {
 
-    const response = await fetch(`${this._endPoint}/${url}`, {method, body, headers});
+  headers.append('Authorization', this._authorization);
 
-    if (!response.ok) {
-      throw new Error(`${response.status}: ${response.statusText}`);
+  const response = await fetch(
+    `${this._endPoint}/${url}`,
+    {
+      method,
+      body,
+      headers
     }
+  );
 
-    return response;
+  if (!response.ok) {
+    throw new Error(`${response.status}: ${response.statusText}`);
   }
+
+  return response;
+}
+
 
   async getPoints() {
     const response = await this._load({url: 'points'});
     const points = await response.json();
+
     return points.map(this._adaptToClient);
   }
 
   async getDestinations() {
     const response = await this._load({url: 'destinations'});
-    const destinations = await response.json();
-    return destinations;
+    return await response.json();
   }
 
   async getOffers() {
     const response = await this._load({url: 'offers'});
-    const offers = await response.json();
-    return offers;
+    return await response.json();
   }
 
   async updatePoint(point) {
@@ -42,9 +50,13 @@ export default class Api {
       url: `points/${point.id}`,
       method: 'PUT',
       body: JSON.stringify(this._adaptToServer(point)),
-      headers: new Headers({'Content-Type': 'application/json'})
+      headers: new Headers({
+        'Content-Type': 'application/json'
+      })
     });
+
     const updatedPoint = await response.json();
+
     return this._adaptToClient(updatedPoint);
   }
 
@@ -53,9 +65,13 @@ export default class Api {
       url: 'points',
       method: 'POST',
       body: JSON.stringify(this._adaptToServer(point)),
-      headers: new Headers({'Content-Type': 'application/json'})
+      headers: new Headers({
+        'Content-Type': 'application/json'
+      })
     });
+
     const newPoint = await response.json();
+
     return this._adaptToClient(newPoint);
   }
 
@@ -67,7 +83,7 @@ export default class Api {
   }
 
   _adaptToServer(point) {
-    const adaptedPoint = {
+    return {
       'base_price': point.basePrice,
       'date_from': point.dateFrom,
       'date_to': point.dateTo,
@@ -77,11 +93,10 @@ export default class Api {
       'offers': point.offersIds,
       'type': point.type
     };
-    return adaptedPoint;
   }
 
   _adaptToClient(point) {
-    const adaptedPoint = {
+    return {
       id: point.id,
       basePrice: point['base_price'],
       dateFrom: point['date_from'],
@@ -91,6 +106,5 @@ export default class Api {
       offersIds: point['offers'],
       type: point['type']
     };
-    return adaptedPoint;
   }
 }

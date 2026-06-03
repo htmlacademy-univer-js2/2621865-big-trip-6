@@ -27,6 +27,10 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
 
   const destinationsOptions = destinations.map((dest) => `<option value="${dest.name}"></option>`).join('');
 
+  const selectedDestination = destinations.find((dest) => dest.name === destinationName);
+  const description = selectedDestination?.description || '';
+  const pictures = selectedDestination?.pictures || [];
+
   return `
     <li class="trip-events__item">
       <form class="event event--edit" action="#" method="post">
@@ -112,13 +116,19 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
               ${offersTemplate}
             </div>
           </section>
-          <section class="event__section  event__section--destination">
-            <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-            <p class="event__destination-description"></p>
-            <div class="event__photos-container">
-              <div class="event__photos-tape"></div>
-            </div>
-          </section>
+          ${description || pictures.length > 0 ? `
+            <section class="event__section  event__section--destination">
+              <h3 class="event__section-title  event__section-title--destination">Destination</h3>
+              ${description ? `<p class="event__destination-description">${description}</p>` : ''}
+              ${pictures.length > 0 ? `
+                <div class="event__photos-container">
+                  <div class="event__photos-tape">
+                    ${pictures.map((pic) => `<img class="event__photo" src="${pic.src}" alt="${pic.description}">`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </section>
+          ` : ''}
         </section>
       </form>
     </li>
@@ -238,6 +248,7 @@ export default class AddFormView extends AbstractStatefulView {
       type: newType,
       selectedOffersIds: []
     });
+    setTimeout(() => this._restoreHandlers(), 0);
   };
 
   _onDestinationChange = (evt) => {

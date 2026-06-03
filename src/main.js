@@ -8,13 +8,19 @@ const filtersContainer = document.querySelector('.trip-controls__filters');
 const eventsContainer = document.querySelector('.trip-events');
 
 const api = new Api();
+
 const filterModel = new FilterModel();
 const model = new Model(api);
+
 const mainPresenter = new MainPresenter(eventsContainer, filterModel);
-const filterPresenter = new FilterPresenter(filtersContainer, filterModel, model); // ← передаём model как pointsModel
+const filterPresenter = new FilterPresenter(filtersContainer, filterModel, model);
 
 mainPresenter.setModel(model);
-filterPresenter.init();
-mainPresenter.init();
 
-model.init();
+function startApp() {
+  filterPresenter.init();
+  mainPresenter.init();
+  model.init();
+}
+
+window.addEventListener('load', startApp);

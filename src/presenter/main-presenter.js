@@ -262,7 +262,7 @@ export default class MainPresenter {
       if (point.id === targetPoint.id) {
         const editForm = new EditFormView(
           point,
-          destination,
+          this.model.getDestinations(),
           this.model.getOffers(),
           async (evt) => {
             evt.preventDefault();
@@ -280,7 +280,8 @@ export default class MainPresenter {
                 dateFrom: editForm._state.dateFrom,
                 dateTo: editForm._state.dateTo,
                 isFavorite: editForm._state.isFavorite,
-                offersIds: editForm._state.selectedOffersIds
+                offersIds: editForm._state.selectedOffersIds,
+                destinationId: editForm._state.destinationId
               };
               await this._handlePointChange(updatedPoint);
               this._renderPoints();
@@ -311,9 +312,10 @@ export default class MainPresenter {
             }
           }
         );
-        render(editForm, this.eventsList);
-        editForm.setEventListeners();
-        editForm._restoreHandlers();
+        if (editForm && editForm.element) {
+          render(editForm, this.eventsList);
+          editForm._restoreHandlers();
+        }
       } else {
         const eventComponent = new EventView(point, destination, pointOffers, () => {
           this._showFormForPoint(point);
@@ -328,14 +330,21 @@ export default class MainPresenter {
   }
 
   _closeAllForms() {
-    if (this.eventsList) {
-      const openForms = this.eventsList.querySelectorAll('.event--edit');
-      openForms.forEach((form) => form.remove());
-    }
+    if (!this.eventsList) return;
+    
+    const openForms = this.eventsList.querySelectorAll('.event--edit');
+    openForms.forEach((form) => {
+      if (form && form.parentNode) {
+        try {
+          form.remove();
+        } catch (e) {
+        }
+      }
+    });
   }
 
   _handleNewEventClick = () => {
-    if (this.eventsList.querySelector('.event--edit')) {
+    if (this.eventsList && this.eventsList.querySelector('.event--edit')) {
       return;
     }
 
@@ -378,7 +387,9 @@ export default class MainPresenter {
           const createdPoint = await this.model.addPoint(newPoint);
           if (createdPoint) {
             this._renderPoints();
-            addForm.element.remove();
+            if (addForm && addForm.element && addForm.element.parentNode) {
+              addForm.element.remove();
+            }
           }
         } catch (err) {
           addForm.shake();
@@ -388,13 +399,17 @@ export default class MainPresenter {
         }
       },
       () => {
-        addForm.element.remove();
+        if (addForm && addForm.element && addForm.element.parentNode) {
+          addForm.element.remove();
+        }
       }
     );
 
-    this.eventsList.insertAdjacentElement('afterbegin', addForm.element);
-    addForm.setEventListeners();
-    addForm._restoreHandlers();
+    if (addForm && addForm.element) {
+      this.eventsList.insertAdjacentElement('afterbegin', addForm.element);
+      addForm.setEventListeners();
+      addForm._restoreHandlers();
+    }
   }
 
   async _handlePointChange(updatedPoint) {
