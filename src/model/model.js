@@ -31,9 +31,12 @@ export default class Model {
       this._points = points;
       this._destinations = destinations;
       this._offers = offers;
-      this._notify(UpdateType.INIT);
+      this._notify(UpdateType.INIT, { isError: false });
     } catch (err) {
-      this._notify(UpdateType.INIT);
+      this._points = [];
+      this._destinations = [];
+      this._offers = [];
+      this._notify(UpdateType.INIT, { isError: true });
     }
   }
 
@@ -92,8 +95,9 @@ export default class Model {
         this._points[index] = response;
         this._notify(UpdateType.PATCH, {action: UserAction.UPDATE_POINT, point: response});
       }
+      return { success: true };
     } catch (err) {
-      throw new Error('Не удалось обновить точку');
+      return { success: false, error: err };
     }
   }
 }

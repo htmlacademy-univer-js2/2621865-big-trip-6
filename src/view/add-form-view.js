@@ -27,6 +27,10 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
 
   const destinationsOptions = destinations.map((dest) => `<option value="${dest.name}"></option>`).join('');
 
+  const selectedDestination = destinations.find((dest) => dest.name === destinationName);
+  const description = selectedDestination?.description || '';
+  const pictures = selectedDestination?.pictures || [];
+
   return `
     <li class="trip-events__item">
       <form class="event event--edit" action="#" method="post">
@@ -106,19 +110,25 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
           <button class="event__reset-btn" type="reset">Cancel</button>
         </header>
         <section class="event__details">
-          <section class="event__section  event__section--offers">
-            <h3 class="event__section-title  event__section-title--offers">Offers</h3>
-            <div class="event__available-offers">
-              ${offersTemplate}
-            </div>
-          </section>
-          <section class="event__section  event__section--destination">
-            <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-            <p class="event__destination-description"></p>
-            <div class="event__photos-container">
-              <div class="event__photos-tape"></div>
-            </div>
-          </section>
+          ${offersForType.length > 0 && type !== 'sightseeing' ? `
+            <section class="event__section event__section--offers">
+              <h3 class="event__section-title event__section-title--offers">Offers</h3>
+              <div class="event__available-offers">${offersTemplate}</div>
+            </section>
+          ` : ''}
+          ${description || pictures.length > 0 ? `
+            <section class="event__section  event__section--destination">
+              <h3 class="event__section-title  event__section-title--destination">Destination</h3>
+              ${description ? `<p class="event__destination-description">${description}</p>` : ''}
+              ${pictures.length > 0 ? `
+                <div class="event__photos-container">
+                  <div class="event__photos-tape">
+                    ${pictures.map((pic) => `<img class="event__photo" src="${pic.src}" alt="${pic.description}">`).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </section>
+          ` : ''}
         </section>
       </form>
     </li>
@@ -129,13 +139,13 @@ export default class AddFormView extends AbstractStatefulView {
   constructor(destinations, allOffers, onFormSubmit, onCancelClick) {
     super();
     const now = new Date();
-    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     this._state = {
       type: 'flight',
       basePrice: 0,
-      dateFrom: now.toISOString(),
-      dateTo: oneHourLater.toISOString(),
+      dateFrom: dayjs(now).format('YYYY-MM-DDTHH:mm:ss'),
+      dateTo: dayjs(tomorrow).format('YYYY-MM-DDTHH:mm:ss'),
       selectedOffersIds: [],
       destinationName: ''
     };
@@ -147,6 +157,20 @@ export default class AddFormView extends AbstractStatefulView {
     this._onCancelClick = onCancelClick;
   }
 
+  reset() {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    this.updateElement({
+      type: 'flight',
+      basePrice: 0,
+      dateFrom: dayjs(now).format('YYYY-MM-DDTHH:mm:ss'),
+      dateTo: dayjs(tomorrow).format('YYYY-MM-DDTHH:mm:ss'),
+      selectedOffersIds: [],
+      destinationName: ''
+    });
+  }
+
   get template() {
     return createAddFormTemplate(this._state, this.destinations, this.allOffers);
   }
@@ -156,13 +180,42 @@ export default class AddFormView extends AbstractStatefulView {
       this._flatpickrStart.destroy();
       this._flatpickrStart = null;
     }
+
     if (this._flatpickrEnd) {
       this._flatpickrEnd.destroy();
       this._flatpickrEnd = null;
     }
+
+    document.removeEventListener('keydown', this._escKeyDownHandler);
+
     this.setEventListeners();
     this._initFlatpickr();
+
+    document.addEventListener('keydown', this._escKeyDownHandler);
   }
+
+  removeElement() {
+    if (this._flatpickrStart) {
+      this._flatpickrStart.destroy();
+      this._flatpickrStart = null;
+    }
+
+    if (this._flatpickrEnd) {
+      this._flatpickrEnd.destroy();
+      this._flatpickrEnd = null;
+    }
+
+    document.removeEventListener('keydown', this._escKeyDownHandler);
+
+    super.removeElement();
+  }
+
+  _escKeyDownHandler = (evt) => {
+    if (evt.key === 'Escape' || evt.key === 'Esc') {
+      evt.preventDefault();
+      this._onCancelClick();
+    }
+  };
 
   setEventListeners() {
     this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
@@ -193,36 +246,34 @@ export default class AddFormView extends AbstractStatefulView {
   }
 
   _initFlatpickr() {
-    setTimeout(() => {
-      const startDateInput = this.element.querySelector('#event-start-time-1');
-      const endDateInput = this.element.querySelector('#event-end-time-1');
+    const startDateInput = this.element.querySelector('#event-start-time-1');
+    const endDateInput = this.element.querySelector('#event-end-time-1');
 
-      if (startDateInput && !this._flatpickrStart) {
-        this._flatpickrStart = flatpickr(startDateInput, {
-          enableTime: true,
-          dateFormat: 'd/m/y H:i',
-          defaultDate: dayjs(this._state.dateFrom).toDate(),
-          onChange: ([date]) => {
-            if (date) {
-              this.updateElement({ dateFrom: dayjs(date).toISOString() });
-            }
+    if (startDateInput && !this._flatpickrStart) {
+      this._flatpickrStart = flatpickr(startDateInput, {
+        enableTime: true,
+        dateFormat: 'd/m/y H:i',
+        defaultDate: dayjs(this._state.dateFrom).toDate(),
+        onChange: ([date]) => {
+          if (date) {
+            this.updateElement({ dateFrom: dayjs(date).toISOString() });
           }
-        });
-      }
+        }
+      });
+    }
 
-      if (endDateInput && !this._flatpickrEnd) {
-        this._flatpickrEnd = flatpickr(endDateInput, {
-          enableTime: true,
-          dateFormat: 'd/m/y H:i',
-          defaultDate: dayjs(this._state.dateTo).toDate(),
-          onChange: ([date]) => {
-            if (date) {
-              this.updateElement({ dateTo: dayjs(date).toISOString() });
-            }
+    if (endDateInput && !this._flatpickrEnd) {
+      this._flatpickrEnd = flatpickr(endDateInput, {
+        enableTime: true,
+        dateFormat: 'd/m/y H:i',
+        defaultDate: dayjs(this._state.dateTo).toDate(),
+        onChange: ([date]) => {
+          if (date) {
+            this.updateElement({ dateTo: dayjs(date).toISOString() });
           }
-        });
-      }
-    }, 50);
+        }
+      });
+    }
   }
 
   shake() {
@@ -234,10 +285,13 @@ export default class AddFormView extends AbstractStatefulView {
 
   _onTypeChange = (evt) => {
     const newType = evt.target.value;
+
     this.updateElement({
       type: newType,
       selectedOffersIds: []
     });
+
+    this._restoreHandlers();
   };
 
   _onDestinationChange = (evt) => {
