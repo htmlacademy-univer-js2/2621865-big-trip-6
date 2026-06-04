@@ -124,7 +124,7 @@ export default class PointPresenter {
 
   handleFormSubmit = async (evt) => {
     evt.preventDefault();
-    
+
     const updatedPoint = {
       ...this.point,
       type: this.editFormComponent._state.type,
@@ -146,7 +146,9 @@ export default class PointPresenter {
   };
 
   handleCloseClick = () => {
-    if (!this.editFormComponent || !this.pointComponent) return;
+    if (!this.editFormComponent || !this.pointComponent) {
+      return;
+    }
 
     if (this.editFormComponent.reset) {
       this.editFormComponent.reset(this.point);

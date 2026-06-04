@@ -165,8 +165,10 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   setEventListeners() {
-    if (!this.element) return;
-    
+    if (!this.element) {
+      return;
+    }
+
     this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
     this.element.querySelector('.event__rollup-btn').addEventListener('click', this._onCloseClick);
     this.element.querySelector('.event__reset-btn').addEventListener('click', this._onDeleteClick);
@@ -225,7 +227,9 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   shake() {
-    if (!this.element) return;
+    if (!this.element) {
+      return;
+    }
     this.element.classList.add('shake');
     setTimeout(() => {
       if (this.element) {
@@ -250,20 +254,24 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   _onDestinationChange = (evt) => {
-    if (!this.element || !this.element.parentNode) return;
-    
+    if (!this.element || !this.element.parentNode) {
+      return;
+    }
+
     const destinationName = evt.target.value;
     const selectedDestination = this.destinations.find((dest) => dest.name === destinationName);
-    
-    this.updateElement({ 
+
+    this.updateElement({
       destinationName: destinationName,
       destinationId: selectedDestination ? selectedDestination.id : ''
     });
   };
 
   _onOfferChange = (evt) => {
-    if (!this.element || !this.element.parentNode) return;
-    
+    if (!this.element || !this.element.parentNode) {
+      return;
+    }
+
     const offerId = evt.target.value;
     let selectedOffersIds = [...this._state.selectedOffersIds];
     if (evt.target.checked) {
@@ -277,7 +285,9 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   _onPriceChange = (evt) => {
-    if (!this.element || !this.element.parentNode) return;
+    if (!this.element || !this.element.parentNode) {
+      return;
+    }
     this.updateElement({ basePrice: Number(evt.target.value) });
   };
 

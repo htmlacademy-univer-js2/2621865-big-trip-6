@@ -1,5 +1,5 @@
 const AUTHORIZATION = `Basic random-${Math.random()}`;
-const END_POINT = 'https://23.objects.htmlacademy.pro/big-trip';
+const END_POINT = 'https://24.objects.htmlacademy.pro/big-trip';
 
 export default class Api {
   constructor(endPoint = END_POINT, authorization = AUTHORIZATION) {
@@ -7,25 +7,25 @@ export default class Api {
     this._authorization = authorization;
   }
 
-async _load({url, method = 'GET', body = null, headers = new Headers()}) {
+  async _load({url, method = 'GET', body = null, headers = new Headers()}) {
 
-  headers.append('Authorization', this._authorization);
+    headers.append('Authorization', this._authorization);
 
-  const response = await fetch(
-    `${this._endPoint}/${url}`,
-    {
-      method,
-      body,
-      headers
+    const response = await fetch(
+      `${this._endPoint}/${url}`,
+      {
+        method,
+        body,
+        headers
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`${response.status}: ${response.statusText}`);
     }
-  );
 
-  if (!response.ok) {
-    throw new Error(`${response.status}: ${response.statusText}`);
+    return response;
   }
-
-  return response;
-}
 
 
   async getPoints() {

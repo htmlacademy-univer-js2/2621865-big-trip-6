@@ -160,13 +160,13 @@ export default class MainPresenter {
     this.currentFilter = this.filterModel.getFilter();
     this.currentSort = SortType.DAY;
     const sortInputs = document.querySelectorAll('.trip-sort__input');
-    sortInputs.forEach(input => {
+    sortInputs.forEach((input) => {
       input.checked = false;
       if (input.dataset.sortType === 'day' || input.id === 'sort-day') {
         input.checked = true;
       }
     });
-    
+
     this._closeAllForms();
     this._renderPoints();
   };
@@ -225,7 +225,9 @@ export default class MainPresenter {
   }
 
   _renderPoints() {
-    if (!this.model) return;
+    if (!this.model) {
+      return;
+    }
 
     const points = this._getFilteredAndSortedPoints();
 
@@ -359,8 +361,10 @@ export default class MainPresenter {
   }
 
   _closeAllForms() {
-    if (!this.eventsList) return;
-    
+    if (!this.eventsList) {
+      return;
+    }
+
     const openForms = this.eventsList.querySelectorAll('.event--edit');
     openForms.forEach((form) => {
       if (form && form.parentNode) {
@@ -376,15 +380,15 @@ export default class MainPresenter {
 
     this.filterModel.setFilter('FILTER_CHANGE', FilterType.EVERYTHING);
     this.currentSort = SortType.DAY;
-    
+
     const sortInputs = document.querySelectorAll('.trip-sort__input');
-    sortInputs.forEach(input => {
+    sortInputs.forEach((input) => {
       input.checked = false;
       if (input.dataset.sortType === 'day') {
         input.checked = true;
       }
     });
-    
+
     this._closeAllForms();
     this._renderAddForm();
   };
@@ -396,7 +400,7 @@ export default class MainPresenter {
     }
     const newEventBtn = document.querySelector('.trip-main__event-add-btn');
     newEventBtn.disabled = true;
-    
+
     const addForm = new AddFormView(
       this.model.getDestinations(),
       this.model.getOffers(),
@@ -462,17 +466,17 @@ export default class MainPresenter {
     }
   }
 
-    async _handlePointChange(updatedPoint) {
-      try {
-        const result = await this.model.updatePoint(updatedPoint);
-        return result;
-      } catch (err) {
-        const pointElement = document.querySelector(`.event[data-id="${updatedPoint.id}"]`);
-        if (pointElement) {
-          pointElement.classList.add('shake');
-          setTimeout(() => pointElement.classList.remove('shake'), 600);
-        }
-        return { success: false };
+  async _handlePointChange(updatedPoint) {
+    try {
+      const result = await this.model.updatePoint(updatedPoint);
+      return result;
+    } catch (err) {
+      const pointElement = document.querySelector(`.event[data-id="${updatedPoint.id}"]`);
+      if (pointElement) {
+        pointElement.classList.add('shake');
+        setTimeout(() => pointElement.classList.remove('shake'), 600);
       }
+      return { success: false };
     }
+  }
 }

@@ -140,7 +140,7 @@ export default class AddFormView extends AbstractStatefulView {
     super();
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    
+
     this._state = {
       type: 'flight',
       basePrice: 0,
@@ -160,7 +160,7 @@ export default class AddFormView extends AbstractStatefulView {
   reset() {
     const now = new Date();
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    
+
     this.updateElement({
       type: 'flight',
       basePrice: 0,
@@ -245,36 +245,36 @@ export default class AddFormView extends AbstractStatefulView {
     });
   }
 
-_initFlatpickr() {
-  const startDateInput = this.element.querySelector('#event-start-time-1');
-  const endDateInput = this.element.querySelector('#event-end-time-1');
+  _initFlatpickr() {
+    const startDateInput = this.element.querySelector('#event-start-time-1');
+    const endDateInput = this.element.querySelector('#event-end-time-1');
 
-  if (startDateInput && !this._flatpickrStart) {
-    this._flatpickrStart = flatpickr(startDateInput, {
-      enableTime: true,
-      dateFormat: 'd/m/y H:i',
-      defaultDate: dayjs(this._state.dateFrom).toDate(),
-      onChange: ([date]) => {
-        if (date) {
-          this.updateElement({ dateFrom: dayjs(date).toISOString() });
+    if (startDateInput && !this._flatpickrStart) {
+      this._flatpickrStart = flatpickr(startDateInput, {
+        enableTime: true,
+        dateFormat: 'd/m/y H:i',
+        defaultDate: dayjs(this._state.dateFrom).toDate(),
+        onChange: ([date]) => {
+          if (date) {
+            this.updateElement({ dateFrom: dayjs(date).toISOString() });
+          }
         }
-      }
-    });
-  }
+      });
+    }
 
-  if (endDateInput && !this._flatpickrEnd) {
-    this._flatpickrEnd = flatpickr(endDateInput, {
-      enableTime: true,
-      dateFormat: 'd/m/y H:i',
-      defaultDate: dayjs(this._state.dateTo).toDate(),
-      onChange: ([date]) => {
-        if (date) {
-          this.updateElement({ dateTo: dayjs(date).toISOString() });
+    if (endDateInput && !this._flatpickrEnd) {
+      this._flatpickrEnd = flatpickr(endDateInput, {
+        enableTime: true,
+        dateFormat: 'd/m/y H:i',
+        defaultDate: dayjs(this._state.dateTo).toDate(),
+        onChange: ([date]) => {
+          if (date) {
+            this.updateElement({ dateTo: dayjs(date).toISOString() });
+          }
         }
-      }
-    });
+      });
+    }
   }
-}
 
   shake() {
     this.element.classList.add('shake');
