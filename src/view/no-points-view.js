@@ -2,7 +2,12 @@ import AbstractView from '../framework/view/abstract-view.js';
 import {FilterType, NoPointsMessage} from '../const.js';
 
 const createNoPointsTemplate = (filterType) => {
-  const message = NoPointsMessage[filterType] || NoPointsMessage[FilterType.EVERYTHING];
+  let message;
+  if (filterType === 'error') {
+    message = 'Failed to load latest route information';
+  } else {
+    message = NoPointsMessage[filterType] || NoPointsMessage[FilterType.EVERYTHING];
+  }
   return `<p class="trip-events__msg">${message}</p>`;
 };
 

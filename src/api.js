@@ -1,5 +1,5 @@
 const AUTHORIZATION = `Basic random-${Math.random()}`;
-const END_POINT = 'https://24.objects.htmlacademy.pro/big-trip';
+const END_POINT = 'https://23.objects.htmlacademy.pro/big-trip';
 
 export default class Api {
   constructor(endPoint = END_POINT, authorization = AUTHORIZATION) {

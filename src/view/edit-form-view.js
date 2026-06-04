@@ -100,7 +100,7 @@ const createEditFormTemplate = (state, destinations, allOffers) => {
 export default class EditFormView extends AbstractStatefulView {
   constructor(point, destinations, allOffers, onFormSubmit, onCloseClick, onDeleteClick) {
     super();
-    this.destinations = destinations;
+    this.destinations = destinations || [];
     this.allOffers = allOffers;
     this._state = this._getStateFromPoint(point);
     this._flatpickrStart = null;
@@ -108,7 +108,6 @@ export default class EditFormView extends AbstractStatefulView {
     this._onFormSubmit = onFormSubmit;
     this._onCloseClick = onCloseClick;
     this._onDeleteClick = onDeleteClick;
-    this.destinations = destinations || [];
   }
 
   get template() {
@@ -130,22 +129,25 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   _restoreHandlers() {
+    if (!this.element || !this.element.parentNode) {
+      return;
+    }
+
+    document.removeEventListener('keydown', this._escKeyDownHandler);
+
     if (this._flatpickrStart) {
       this._flatpickrStart.destroy();
       this._flatpickrStart = null;
     }
+
     if (this._flatpickrEnd) {
       this._flatpickrEnd.destroy();
       this._flatpickrEnd = null;
     }
+
     this.setEventListeners();
     this._initFlatpickr();
-    
-    const typeLabel = this.element.querySelector('.event__type-output');
-    if (typeLabel && this._state.type) {
-      typeLabel.textContent = this._state.type.charAt(0).toUpperCase() + this._state.type.slice(1);
-    }
-    
+
     document.addEventListener('keydown', this._escKeyDownHandler);
   }
 
@@ -163,6 +165,8 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   setEventListeners() {
+    if (!this.element) return;
+    
     this.element.querySelector('form').addEventListener('submit', this._onFormSubmit);
     this.element.querySelector('.event__rollup-btn').addEventListener('click', this._onCloseClick);
     this.element.querySelector('.event__reset-btn').addEventListener('click', this._onDeleteClick);
@@ -192,7 +196,7 @@ export default class EditFormView extends AbstractStatefulView {
         dateFormat: 'd/m/y H:i',
         defaultDate: dayjs(this._state.dateFrom).toDate(),
         onChange: ([date]) => {
-          if (date) {
+          if (date && this.element && this.element.parentNode) {
             this.updateElement({ dateFrom: dayjs(date).toISOString() });
           }
         }
@@ -205,7 +209,7 @@ export default class EditFormView extends AbstractStatefulView {
         dateFormat: 'd/m/y H:i',
         defaultDate: dayjs(this._state.dateTo).toDate(),
         onChange: ([date]) => {
-          if (date) {
+          if (date && this.element && this.element.parentNode) {
             this.updateElement({ dateTo: dayjs(date).toISOString() });
           }
         }
@@ -214,35 +218,40 @@ export default class EditFormView extends AbstractStatefulView {
   }
 
   reset(point) {
+    if (!this.element || !this.element.parentNode) {
+      return;
+    }
     this.updateElement(this._getStateFromPoint(point));
   }
 
   shake() {
+    if (!this.element) return;
     this.element.classList.add('shake');
     setTimeout(() => {
-      this.element.classList.remove('shake');
+      if (this.element) {
+        this.element.classList.remove('shake');
+      }
     }, 600);
   }
 
   _onTypeChange = (evt) => {
     const newType = evt.target.value;
-    
-    setTimeout(() => {
-      this.updateElement({
-        type: newType,
-        selectedOffersIds: []
-      });
-      
-      setTimeout(() => {
-        const typeLabel = this.element.querySelector('.event__type-output');
-        if (typeLabel) {
-          typeLabel.textContent = newType.charAt(0).toUpperCase() + newType.slice(1);
-        }
-      }, 50);
-    }, 100);
+
+    if (!this.element || !this.element.parentNode) {
+      return;
+    }
+
+    this.updateElement({
+      type: newType,
+      selectedOffersIds: []
+    });
+
+    this._restoreHandlers();
   };
 
   _onDestinationChange = (evt) => {
+    if (!this.element || !this.element.parentNode) return;
+    
     const destinationName = evt.target.value;
     const selectedDestination = this.destinations.find((dest) => dest.name === destinationName);
     
@@ -253,6 +262,8 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   _onOfferChange = (evt) => {
+    if (!this.element || !this.element.parentNode) return;
+    
     const offerId = evt.target.value;
     let selectedOffersIds = [...this._state.selectedOffersIds];
     if (evt.target.checked) {
@@ -266,6 +277,7 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   _onPriceChange = (evt) => {
+    if (!this.element || !this.element.parentNode) return;
     this.updateElement({ basePrice: Number(evt.target.value) });
   };
 

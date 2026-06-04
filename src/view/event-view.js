@@ -1,8 +1,5 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration.js';
-
-dayjs.extend(duration);
 
 const createOfferTemplate = (offer) => `
   <li class="event__offer">
@@ -22,17 +19,25 @@ const createEventTemplate = (point, destination, pointOffers) => {
   const startTime = dayjs(dateFrom).format('HH:mm');
   const endTime = dayjs(dateTo).format('HH:mm');
 
-  const durationMs = dayjs(dateTo).diff(dayjs(dateFrom));
-  const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
-  const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+  const start = dayjs(dateFrom);
+  const end = dayjs(dateTo);
+  const diffMs = end.diff(start);
 
-  let durationText = '';
-  if (durationHours === 0) {
-    durationText = `${durationMinutes}M`;
-  } else if (durationMinutes === 0) {
-    durationText = `${durationHours}H`;
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  let durationText;
+
+  if (days > 0) {
+    durationText =
+      `${days.toString().padStart(2, '0')}d ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m`;
+  } else if (hours > 0) {
+    durationText =
+      `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m`;
   } else {
-    durationText = `${durationHours}H ${durationMinutes}M`;
+    durationText =
+      `${minutes.toString().padStart(2, '0')}m`;
   }
 
   const offersTemplate = pointOffers

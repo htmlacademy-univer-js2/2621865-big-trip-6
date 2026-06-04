@@ -122,11 +122,9 @@ export default class PointPresenter {
     });
   };
 
-  handleFormSubmit = (evt) => {
+  handleFormSubmit = async (evt) => {
     evt.preventDefault();
-
-    if (!this.editFormComponent || !this.pointComponent) return;
-
+    
     const updatedPoint = {
       ...this.point,
       type: this.editFormComponent._state.type,
@@ -138,17 +136,13 @@ export default class PointPresenter {
       destinationId: this.editFormComponent._state.destinationId
     };
 
-    this.changeData(updatedPoint);
-
-    if (this.editFormComponent.element && this.pointComponent.element) {
-      replace(this.pointComponent, this.editFormComponent);
+    const result = await this.changeData(updatedPoint);
+    if (result && !result.success) {
+      this.editFormComponent.shake();
+      return;
     }
-
-    if (this.pointComponent) {
-      this.pointComponent.setEventListeners();
-    }
-
-    document.removeEventListener('keydown', this._escKeyDownHandler);
+    replace(this.pointComponent, this.editFormComponent);
+    this.pointComponent.setEventListeners();
   };
 
   handleCloseClick = () => {

@@ -79,9 +79,9 @@ export default class MainPresenter {
 
     let dates = '';
     if (startMonth === endMonth) {
-      dates = `${startMonth} ${startDay}&nbsp;&mdash;&nbsp;${endDay}`;
+      dates = `${startDay} ${startMonth} — ${endDay} ${endMonth}`.toUpperCase();
     } else {
-      dates = `${startMonth} ${startDay}&nbsp;&mdash;&nbsp;${endMonth} ${endDay}`;
+      dates = `${startDay} ${startMonth} — ${endDay} ${endMonth}`.toUpperCase();
     }
 
     let totalCost = 0;
@@ -106,17 +106,31 @@ export default class MainPresenter {
     tripInfoContainer.insertBefore(this.tripInfoComponent.element, tripInfoContainer.firstChild);
   }
 
-  _handleModelChange = (updateType) => {
+  _handleModelChange = (updateType, data) => {
     if (updateType === UpdateType.INIT) {
       this._removeLoading();
-      this._renderTripInfo();
-      this._renderPoints();
+      if (data && data.isError) {
+        this._renderError();
+      } else if (this.model.getPoints().length === 0) {
+        if (this.eventsList) {
+          this.eventsList.innerHTML = '';
+        }
+        this._renderNoPoints();
+      } else {
+        this._renderTripInfo();
+        this._renderPoints();
+      }
     }
     if (updateType === UpdateType.PATCH || updateType === UpdateType.MAJOR) {
       this._renderTripInfo();
       this._renderPoints();
     }
   };
+
+  _renderError() {
+    this.noPointsComponent = new NoPointsView('error');
+    render(this.noPointsComponent, this.eventsList);
+  }
 
   _renderLoading() {
     this.loadingComponent = new LoadingView();
@@ -145,6 +159,14 @@ export default class MainPresenter {
   _handleFilterChange = () => {
     this.currentFilter = this.filterModel.getFilter();
     this.currentSort = SortType.DAY;
+    const sortInputs = document.querySelectorAll('.trip-sort__input');
+    sortInputs.forEach(input => {
+      input.checked = false;
+      if (input.dataset.sortType === 'day' || input.id === 'sort-day') {
+        input.checked = true;
+      }
+    });
+    
     this._closeAllForms();
     this._renderPoints();
   };
@@ -203,13 +225,14 @@ export default class MainPresenter {
   }
 
   _renderPoints() {
-    if (!this.model) {
-      return;
-    }
+    if (!this.model) return;
 
     const points = this._getFilteredAndSortedPoints();
 
     if (points.length === 0) {
+      if (this.eventsList) {
+        this.eventsList.innerHTML = '';
+      }
       this._renderNoPoints();
       return;
     }
@@ -220,13 +243,15 @@ export default class MainPresenter {
     }
 
     this.eventsList.innerHTML = '';
-
-    points.forEach((point) => {
-      this._renderPoint(point);
-    });
+    points.forEach((point) => this._renderPoint(point));
   }
 
   _renderNoPoints() {
+    if (this.noPointsComponent) {
+      remove(this.noPointsComponent);
+      this.noPointsComponent = null;
+    }
+    this.eventsList.innerHTML = '';
     this.noPointsComponent = new NoPointsView(this.currentFilter);
     render(this.noPointsComponent, this.eventsList);
   }
@@ -283,7 +308,11 @@ export default class MainPresenter {
                 offersIds: editForm._state.selectedOffersIds,
                 destinationId: editForm._state.destinationId
               };
-              await this._handlePointChange(updatedPoint);
+              const result = await this._handlePointChange(updatedPoint);
+              if (!result || !result.success) {
+                editForm.shake();
+                return;
+              }
               this._renderPoints();
             } catch (err) {
               editForm.shake();
@@ -335,10 +364,7 @@ export default class MainPresenter {
     const openForms = this.eventsList.querySelectorAll('.event--edit');
     openForms.forEach((form) => {
       if (form && form.parentNode) {
-        try {
-          form.remove();
-        } catch (e) {
-        }
+        form.remove();
       }
     });
   }
@@ -350,11 +376,27 @@ export default class MainPresenter {
 
     this.filterModel.setFilter('FILTER_CHANGE', FilterType.EVERYTHING);
     this.currentSort = SortType.DAY;
+    
+    const sortInputs = document.querySelectorAll('.trip-sort__input');
+    sortInputs.forEach(input => {
+      input.checked = false;
+      if (input.dataset.sortType === 'day') {
+        input.checked = true;
+      }
+    });
+    
     this._closeAllForms();
     this._renderAddForm();
   };
 
   _renderAddForm() {
+    if (this.noPointsComponent) {
+      remove(this.noPointsComponent);
+      this.noPointsComponent = null;
+    }
+    const newEventBtn = document.querySelector('.trip-main__event-add-btn');
+    newEventBtn.disabled = true;
+    
     const addForm = new AddFormView(
       this.model.getDestinations(),
       this.model.getOffers(),
@@ -384,23 +426,31 @@ export default class MainPresenter {
             offersIds: addForm._state.selectedOffersIds
           };
 
-          const createdPoint = await this.model.addPoint(newPoint);
-          if (createdPoint) {
-            this._renderPoints();
-            if (addForm && addForm.element && addForm.element.parentNode) {
-              addForm.element.remove();
-            }
+          const result = await this.model.addPoint(newPoint);
+          if (!result || !result.success) {
+            addForm.shake();
+            return;
+          }
+          this._renderPoints();
+          if (addForm && addForm.element && addForm.element.parentNode) {
+            addForm.element.remove();
           }
         } catch (err) {
           addForm.shake();
         } finally {
           saveBtn.textContent = originalText;
           this._uiBlocker.unblock();
+          newEventBtn.disabled = false;
         }
       },
       () => {
+        addForm.reset();
         if (addForm && addForm.element && addForm.element.parentNode) {
           addForm.element.remove();
+        }
+        newEventBtn.disabled = false;
+        if (this.model.getPoints().length === 0) {
+          this._renderNoPoints();
         }
       }
     );
@@ -412,7 +462,17 @@ export default class MainPresenter {
     }
   }
 
-  async _handlePointChange(updatedPoint) {
-    await this.model.updatePoint(updatedPoint);
-  }
+    async _handlePointChange(updatedPoint) {
+      try {
+        const result = await this.model.updatePoint(updatedPoint);
+        return result;
+      } catch (err) {
+        const pointElement = document.querySelector(`.event[data-id="${updatedPoint.id}"]`);
+        if (pointElement) {
+          pointElement.classList.add('shake');
+          setTimeout(() => pointElement.classList.remove('shake'), 600);
+        }
+        return { success: false };
+      }
+    }
 }
