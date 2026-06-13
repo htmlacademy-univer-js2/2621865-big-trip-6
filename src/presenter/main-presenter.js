@@ -362,6 +362,10 @@ export default class MainPresenter {
         eventComponent.setEventListeners();
       }
     });
+    const newEventBtn = document.querySelector('.trip-main__event-add-btn');
+    if (newEventBtn) {
+      newEventBtn.disabled = false;
+    }
   }
 
   _closeAllForms() {
@@ -375,6 +379,10 @@ export default class MainPresenter {
         form.remove();
       }
     });
+    const newEventBtn = document.querySelector('.trip-main__event-add-btn');
+    if (newEventBtn) {
+      newEventBtn.disabled = false;
+    }
   }
 
   _handleNewEventClick = () => {
