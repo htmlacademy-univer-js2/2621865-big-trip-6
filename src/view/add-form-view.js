@@ -92,12 +92,12 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
               ${destinationsOptions}
             </datalist>
           </div>
-          <div class="event__field-group  event__field-group--time">
+          <div class="event__field-group event__field-group--time">
             <label class="visually-hidden" for="event-start-time-1">From</label>
-            <input class="event__input  event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${dayjs(dateFrom).format('DD/MM/YY HH:mm')}">
+            <input class="event__input event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${dateFrom ? dayjs(dateFrom).format('DD/MM/YY HH:mm') : ''}">
             &mdash;
             <label class="visually-hidden" for="event-end-time-1">To</label>
-            <input class="event__input  event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${dayjs(dateTo).format('DD/MM/YY HH:mm')}">
+            <input class="event__input event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${dateTo ? dayjs(dateTo).format('DD/MM/YY HH:mm') : ''}">
           </div>
           <div class="event__field-group  event__field-group--price">
             <label class="event__label" for="event-price-1">
@@ -138,14 +138,11 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
 export default class AddFormView extends AbstractStatefulView {
   constructor(destinations, allOffers, onFormSubmit, onCancelClick) {
     super();
-    const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
     this._state = {
       type: 'flight',
       basePrice: 0,
-      dateFrom: dayjs(now).format('YYYY-MM-DDTHH:mm:ss'),
-      dateTo: dayjs(tomorrow).format('YYYY-MM-DDTHH:mm:ss'),
+      dateFrom: '',
+      dateTo: '',
       selectedOffersIds: [],
       destinationName: ''
     };
@@ -236,7 +233,10 @@ export default class AddFormView extends AbstractStatefulView {
 
     const priceInput = this.element.querySelector('.event__input--price');
     if (priceInput) {
-      priceInput.addEventListener('input', this._onPriceChange.bind(this));
+      priceInput.addEventListener('input', (evt) => {
+        const value = parseInt(evt.target.value, 10);
+        this._state.basePrice = isNaN(value) ? 0 : value;
+      });
     }
 
     const checkboxes = this.element.querySelectorAll('.event__offer-checkbox');
@@ -253,7 +253,7 @@ export default class AddFormView extends AbstractStatefulView {
       this._flatpickrStart = flatpickr(startDateInput, {
         enableTime: true,
         dateFormat: 'd/m/y H:i',
-        defaultDate: dayjs(this._state.dateFrom).toDate(),
+        defaultDate: this._state.dateFrom ? dayjs(this._state.dateFrom).toDate() : null,
         onChange: ([date]) => {
           if (date) {
             this.updateElement({ dateFrom: dayjs(date).toISOString() });
@@ -266,7 +266,7 @@ export default class AddFormView extends AbstractStatefulView {
       this._flatpickrEnd = flatpickr(endDateInput, {
         enableTime: true,
         dateFormat: 'd/m/y H:i',
-        defaultDate: dayjs(this._state.dateTo).toDate(),
+        defaultDate: this._state.dateTo ? dayjs(this._state.dateTo).toDate() : null,
         onChange: ([date]) => {
           if (date) {
             this.updateElement({ dateTo: dayjs(date).toISOString() });
@@ -317,6 +317,8 @@ export default class AddFormView extends AbstractStatefulView {
 
   _onPriceChange = (evt) => {
     const value = parseInt(evt.target.value, 10);
-    this.updateElement({ basePrice: isNaN(value) ? 0 : value });
+    const basePrice = isNaN(value) ? 0 : value;
+    this._state.basePrice = basePrice;
+    evt.target.value = basePrice;
   };
 }

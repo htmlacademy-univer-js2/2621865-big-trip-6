@@ -9,6 +9,10 @@ import LoadingView from '../view/loading-view.js';
 import {FilterType, SortType, UpdateType} from '../const.js';
 import TripInfoView from '../view/trip-info-view.js';
 
+const SHAKE_ANIMATION_TIMEOUT = 600;
+const UI_BLOCKER_LOWER_LIMIT = 500;
+const UI_BLOCKER_UPPER_LIMIT = 700;
+
 export default class MainPresenter {
   constructor(eventsContainer, filterModel) {
     this.filtersContainer = document.querySelector('.trip-controls__filters');
@@ -22,7 +26,7 @@ export default class MainPresenter {
     this.eventsList = null;
     this.isAddFormOpen = false;
     this.loadingComponent = null;
-    this._uiBlocker = new UiBlocker({lowerLimit: 500, upperLimit: 700});
+    this._uiBlocker = new UiBlocker({lowerLimit: UI_BLOCKER_LOWER_LIMIT, upperLimit: UI_BLOCKER_UPPER_LIMIT});
     this.tripInfoComponent = null;
   }
 
@@ -412,9 +416,7 @@ export default class MainPresenter {
         saveBtn.textContent = 'Saving...';
 
         try {
-          const destination = this.model.getDestinations().find(
-            (dest) => dest.name === addForm._state.destinationName
-          );
+          const destination = this.model.getDestinationByName(addForm._state.destinationName);
 
           if (!destination) {
             throw new Error('Выберите пункт назначения');
@@ -474,7 +476,7 @@ export default class MainPresenter {
       const pointElement = document.querySelector(`.event[data-id="${updatedPoint.id}"]`);
       if (pointElement) {
         pointElement.classList.add('shake');
-        setTimeout(() => pointElement.classList.remove('shake'), 600);
+        setTimeout(() => pointElement.classList.remove('shake'), SHAKE_ANIMATION_TIMEOUT);
       }
       return { success: false };
     }

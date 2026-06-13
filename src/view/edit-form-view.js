@@ -285,10 +285,10 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   _onPriceChange = (evt) => {
-    if (!this.element || !this.element.parentNode) {
-      return;
-    }
-    this.updateElement({ basePrice: Number(evt.target.value) });
+    const value = parseInt(evt.target.value, 10);
+    const basePrice = isNaN(value) ? 0 : value;
+    this._state.basePrice = basePrice;
+    evt.target.value = basePrice;
   };
 
   _escKeyDownHandler = (evt) => {

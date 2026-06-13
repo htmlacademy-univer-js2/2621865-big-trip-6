@@ -3,11 +3,12 @@ import EventView from '../view/event-view.js';
 import EditFormView from '../view/edit-form-view.js';
 
 export default class PointPresenter {
-  constructor(pointsContainer, changeData, changeMode, allOffers) {
+  constructor(pointsContainer, changeData, changeMode, allOffers, destinations) {
     this.pointsContainer = pointsContainer;
     this.changeData = changeData;
     this.changeMode = changeMode;
     this.allOffers = allOffers;
+    this.destinations = destinations || [];
 
     this.pointComponent = null;
     this.editFormComponent = null;
@@ -17,6 +18,14 @@ export default class PointPresenter {
     this.offers = null;
 
     this._escKeyDownHandler = this._escKeyDownHandler.bind(this);
+  }
+
+  _addEscListener() {
+    document.addEventListener('keydown', this._escKeyDownHandler);
+  }
+
+  _removeEscListener() {
+    document.removeEventListener('keydown', this._escKeyDownHandler);
   }
 
   init(point, destination, offers) {
@@ -37,7 +46,7 @@ export default class PointPresenter {
 
     this.editFormComponent = new EditFormView(
       point,
-      this.destinations || [],
+      this.destinations,
       this.allOffers,
       this.handleFormSubmit,
       this.handleCloseClick,
@@ -77,8 +86,7 @@ export default class PointPresenter {
     if (this.editFormComponent) {
       remove(this.editFormComponent);
     }
-
-    document.removeEventListener('keydown', this._escKeyDownHandler);
+    this._removeEscListener();
   }
 
   resetView() {
@@ -97,7 +105,7 @@ export default class PointPresenter {
 
       this.pointComponent.setEventListeners();
 
-      document.removeEventListener('keydown', this._escKeyDownHandler);
+      this._removeEscListener();
     }
   }
 
@@ -112,7 +120,7 @@ export default class PointPresenter {
       this.editFormComponent._restoreHandlers();
     }
 
-    document.addEventListener('keydown', this._escKeyDownHandler);
+    this._addEscListener();
   };
 
   handleFavoriteClick = () => {
@@ -143,6 +151,7 @@ export default class PointPresenter {
     }
     replace(this.pointComponent, this.editFormComponent);
     this.pointComponent.setEventListeners();
+    this._removeEscListener();
   };
 
   handleCloseClick = () => {
@@ -162,7 +171,7 @@ export default class PointPresenter {
       this.pointComponent.setEventListeners();
     }
 
-    document.removeEventListener('keydown', this._escKeyDownHandler);
+    this._removeEscListener();
   };
 
   handleDeleteClick = () => {
@@ -171,7 +180,7 @@ export default class PointPresenter {
       pointId: this.point.id
     });
 
-    document.removeEventListener('keydown', this._escKeyDownHandler);
+    this._removeEscListener();
   };
 
   _escKeyDownHandler(evt) {

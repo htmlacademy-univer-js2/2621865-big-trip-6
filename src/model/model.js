@@ -53,7 +53,7 @@ export default class Model {
   }
 
   getDestinationById(id) {
-    return this._destinations.find((dest) => dest.id === id);
+    return this._destinations.find((destination) => destination.id === id);
   }
 
   getOffersByType(type) {
@@ -64,6 +64,10 @@ export default class Model {
   getOfferById(type, offerId) {
     const offerGroup = this._offers.find((offer) => offer.type === type);
     return offerGroup ? offerGroup.offers.find((offer) => offer.id === offerId) : null;
+  }
+
+  getDestinationByName(name) {
+    return this._destinations.find((destination) => destination.name === name);
   }
 
   async addPoint(point) {
