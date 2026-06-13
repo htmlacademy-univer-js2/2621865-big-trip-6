@@ -363,7 +363,9 @@ export default class MainPresenter {
       }
     });
     const newEventBtn = document.querySelector('.trip-main__event-add-btn');
-      if (newEventBtn) newEventBtn.disabled = false;
+    if (newEventBtn) {
+      newEventBtn.disabled = false;
+    }
   }
 
   _closeAllForms() {
@@ -378,7 +380,9 @@ export default class MainPresenter {
       }
     });
     const newEventBtn = document.querySelector('.trip-main__event-add-btn');
-      if (newEventBtn) newEventBtn.disabled = false;
+    if (newEventBtn) {
+      newEventBtn.disabled = false;
+    }
   }
 
   _handleNewEventClick = () => {
