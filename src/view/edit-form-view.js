@@ -3,6 +3,8 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import dayjs from 'dayjs';
 
+const SHAKE_ANIMATION_TIMEOUT = 600;
+
 const createEditFormTemplate = (state, destinations, allOffers) => {
   const {type, basePrice, dateFrom, dateTo, selectedOffersIds, destinationName} = state;
 
@@ -20,7 +22,8 @@ const createEditFormTemplate = (state, destinations, allOffers) => {
   const offersForType = allOffers.find((offerGroup) => offerGroup.type === type)?.offers || [];
   const offersTemplate = offersForType.map((offer) => createOfferSelectorTemplate(offer, selectedOffersIds.includes(offer.id))).join('');
 
-  const selectedDestination = destinations.find((dest) => dest.name === destinationName);
+  const destinationsOptions = destinations.map((destination) => `<option value="${destination.name}"></option>`).join('');
+  const selectedDestination = destinations.find((destination) => destination.name === destinationName);
   const description = selectedDestination?.description || '';
   const pictures = selectedDestination?.pictures || [];
 
@@ -52,7 +55,7 @@ const createEditFormTemplate = (state, destinations, allOffers) => {
             </label>
             <input class="event__input event__input--destination" id="event-destination-1" type="text" name="event-destination" value="${destinationName || ''}" list="destination-list-1" autocomplete="off">
             <datalist id="destination-list-1">
-              ${destinations.map((dest) => `<option value="${dest.name}"></option>`).join('')}
+              ${destinationsOptions}
             </datalist>
             <input type="hidden" name="event-destination-id" value="${state.destinationId || ''}">
           </div>
@@ -235,7 +238,7 @@ export default class EditFormView extends AbstractStatefulView {
       if (this.element) {
         this.element.classList.remove('shake');
       }
-    }, 600);
+    }, SHAKE_ANIMATION_TIMEOUT);
   }
 
   _onTypeChange = (evt) => {
@@ -259,7 +262,7 @@ export default class EditFormView extends AbstractStatefulView {
     }
 
     const destinationName = evt.target.value;
-    const selectedDestination = this.destinations.find((dest) => dest.name === destinationName);
+    const selectedDestination = this.destinations.find((destination) => destination.name === destinationName);
 
     this.updateElement({
       destinationName: destinationName,

@@ -3,6 +3,8 @@ import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import dayjs from 'dayjs';
 
+const SHAKE_ANIMATION_TIMEOUT = 600;
+
 const createAddFormTemplate = (state, destinations, allOffers) => {
   const {type, basePrice, dateFrom, dateTo, selectedOffersIds, destinationName} = state;
 
@@ -25,9 +27,9 @@ const createAddFormTemplate = (state, destinations, allOffers) => {
   const offersForType = allOffers.find((offerGroup) => offerGroup.type === type)?.offers || [];
   const offersTemplate = offersForType.map((offer) => createOfferSelectorTemplate(offer, selectedOffersIds.includes(offer.id))).join('');
 
-  const destinationsOptions = destinations.map((dest) => `<option value="${dest.name}"></option>`).join('');
+  const destinationsOptions = destinations.map((destination) => `<option value="${destination.name}"></option>`).join('');
 
-  const selectedDestination = destinations.find((dest) => dest.name === destinationName);
+  const selectedDestination = destinations.find((destination) => destination.name === destinationName);
   const description = selectedDestination?.description || '';
   const pictures = selectedDestination?.pictures || [];
 
@@ -280,7 +282,7 @@ export default class AddFormView extends AbstractStatefulView {
     this.element.classList.add('shake');
     setTimeout(() => {
       this.element.classList.remove('shake');
-    }, 600);
+    }, SHAKE_ANIMATION_TIMEOUT);
   }
 
   _onTypeChange = (evt) => {

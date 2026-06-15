@@ -33,8 +33,8 @@ export default class PointPresenter {
     this.destination = destination;
     this.offers = offers;
 
-    const prevPointComponent = this.pointComponent;
-    const prevEditFormComponent = this.editFormComponent;
+    const previousPointComponent = this.pointComponent;
+    const previousEditFormComponent = this.editFormComponent;
 
     this.pointComponent = new EventView(
       point,
@@ -53,25 +53,25 @@ export default class PointPresenter {
       this.handleDeleteClick
     );
 
-    if (prevPointComponent === null || prevEditFormComponent === null) {
+    if (previousPointComponent === null || previousEditFormComponent === null) {
       render(this.pointComponent, this.pointsContainer);
       this.pointComponent.setEventListeners();
       return;
     }
 
-    if (prevEditFormComponent && prevEditFormComponent.element && this.pointsContainer.contains(prevEditFormComponent.element)) {
-      replace(this.editFormComponent, prevEditFormComponent);
+    if (previousEditFormComponent && previousEditFormComponent.element && this.pointsContainer.contains(previousEditFormComponent.element)) {
+      replace(this.editFormComponent, previousEditFormComponent);
     }
 
-    if (prevPointComponent && prevPointComponent.element && this.pointsContainer.contains(prevPointComponent.element)) {
-      replace(this.pointComponent, prevPointComponent);
+    if (previousPointComponent && previousPointComponent.element && this.pointsContainer.contains(previousPointComponent.element)) {
+      replace(this.pointComponent, previousPointComponent);
     }
 
-    if (prevPointComponent) {
-      remove(prevPointComponent);
+    if (previousPointComponent) {
+      remove(previousPointComponent);
     }
-    if (prevEditFormComponent) {
-      remove(prevEditFormComponent);
+    if (previousEditFormComponent) {
+      remove(previousEditFormComponent);
     }
 
     if (this.pointComponent) {
