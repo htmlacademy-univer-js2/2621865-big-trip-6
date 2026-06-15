@@ -14,7 +14,7 @@ export default class Model {
   }
 
   removeObserver(observer) {
-    this._observers = this._observers.filter((obs) => obs !== observer);
+    this._observers = this._observers.filter((observerItem) => observerItem !== observer);
   }
 
   _notify(updateType, data) {
